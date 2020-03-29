@@ -1,0 +1,367 @@
+#include:
+#    - template: Code-Quality.gitlab-ci.yml
+
+#code_quality:
+#    artifacts:
+#        paths: [gl-code-quality-report.json]
+
+image: ubuntu:18.04
+
+stages:
+    - build_depends
+    - build
+    - build_tests
+    - qa_tests
+    - benchmark_tests
+
+variables:
+    # Don't allow tests to hang
+    TRAVIS: 1
+
+cache: &global_cache_settings
+    paths:
+        - ccache/
+
+.ccache_scripts:
+    before_script:
+        - set -o errexit; source .gitlab-ci/before_script.sh
+        - mkdir -p ccache
+        - export CCACHE_BASEDIR=${PWD}
+        - export CCACHE_DIR=${PWD}/ccache
+        - export CCACHE_COMPILERCHECK=content
+        - ccache --zero-stats || true
+
+#x86_64 Linux + deps as via system lib
+.cache-debian-nodeps:
+    extends: .ccache_scripts
+    cache:
+        <<: *global_cache_settings
+        key: debian_cache-nodeps
+
+build-debian-nodeps:
+    stage: build
+    extends: .cache-debian-nodeps
+    needs: []
+    script:
+        - set -o errexit; source .gitlab-ci/install.sh
+        - ./autogen.sh
+        - CONFIG_SITE=$PWD/depends/x86_64-unknown-linux-gnu/share/config.site ./configure --prefix=/
+        - make -j4
+        - ccache --show-stats
+    artifacts:
+        paths:
+            - ./src/eccoind
+            - ./src/test/test_bitcoin
+            - ./src/bench/bench_bitcoin
+
+build-debian-tests-nodeps:
+    stage: build_tests
+    extends: .cache-debian-nodeps
+    needs: ["build-debian-nodeps"]
+    script:
+        - set -o errexit; source .gitlab-ci/install.sh
+        - (cd src; ./test/test_bitcoin)
+    dependencies:
+        - build-debian-nodeps
+
+#bitcoind
+.cache-debian:
+    extends: .ccache_scripts
+    cache:
+        <<: *global_cache_settings
+        key: debian_cache
+
+build-debian:
+    stage: build
+    extends: .cache-debian
+    needs: []
+    script:
+        - cd depends
+        - make HOST=x86_64-unknown-linux-gnu -j4
+        - cd ..
+        - ./autogen.sh
+        - CONFIG_SITE=$PWD/depends/x86_64-unknown-linux-gnu/share/config.site ./configure --prefix=/
+        - make -j4
+        - ccache --show-stats
+
+    artifacts:
+        paths:
+            - ccache/*
+            - ./*
+            - ./src/eccoind
+            - ./src/test/test_bitcoin
+            - ./src/bench/bench_bitcoin
+
+build-debian-tests:
+    stage: build_tests
+    extends: .cache-debian
+    needs: ["build-debian"]
+    script:
+        - (cd src; ./test/test_bitcoin)
+    dependencies:
+        - build-debian
+
+test-debian-qa:
+    stage: qa_tests
+    extends: .cache-debian
+    needs: ["build-debian"]
+    script:
+        - apt-get install -y python3-zmq
+        - ./qa/pull-tester/rpc-tests.py --coverage --no-ipv6-rpc-listen
+    dependencies:
+        - build-debian
+
+test-debian-benchmarks:
+    stage: benchmark_tests
+    extends: .cache-debian
+    needs: ["build-debian"]
+    script:
+        - (./src/bench/bench_bitcoin -evals=1)
+    dependencies:
+        - build-debian
+
+#test-debian-unittests:
+#    stage: test
+#    cache: {}
+#    needs: ["build-debian-tests"]
+#    script:
+#        - (cd src; ./test/test_bitcoin --logger=HRF:JUNIT,message,junit_unit_tests.xml)
+#    dependencies:
+#        - build-debian-tests
+#    artifacts:
+#        reports:
+#            junit: junit_unit_tests.xml
+
+
+#bitcoind clang (no depend, only system lib installed via apt)
+.debian-clang-env:
+    extends: .cache-debian-clang
+    variables:
+        CC: clang-6
+        CXX: clang++-6
+
+.cache-debian-clang:
+    extends: .ccache_scripts
+    cache:
+        <<: *global_cache_settings
+        key: debian_cache_clang
+
+build-debian-clang:
+    stage: build
+    extends: .debian-clang-env
+    needs: []
+    script:
+        - cd depends
+        - make HOST=x86_64-unknown-linux-gnu -j4
+        - cd ..
+        - ./autogen.sh
+        - CONFIG_SITE=$PWD/depends/x86_64-unknown-linux-gnu/share/config.site ./configure --prefix=/
+        - make -j4
+        - ccache --show-stats
+    artifacts:
+        paths:
+            - ./src/eccoind
+            - ./src/test/test_bitcoin
+            - ./src/bench/bench_bitcoin
+
+build-debian-tests-clang:
+    stage: build_tests
+    extends: .debian-clang-env
+    needs: ["build-debian-clang"]
+    script:
+        - (cd src; ./test/test_bitcoin)
+    artifacts:
+        paths:
+            - .src/test/test_bitcoin
+    dependencies:
+        - build-debian-clang
+
+#test-debian-unittests-clang:
+#    stage: test
+#    cache: {}
+#    needs: ["build-debian-tests-clang"]
+#    script:
+#        - (cd src; ./test/test_bitcoin --logger=HRF:JUNIT,message,junit_unit_tests.xml)
+#    dependencies:
+#        - build-debian-tests-clang
+#    artifacts:
+#        reports:
+#            junit: junit_unit_tests.xml
+
+#test-debian-benchmarks-clang:
+#    stage: test
+#    extends: .debian-clang-env
+#    needs: ["build-debian-clang"]
+#    script:
+#        - (cd src; ./bench/bench_bitcoin -evals=1)
+#    dependencies:
+#        - build-debian-clang
+
+#ARM64
+.cache-arm-64:
+    extends: .ccache_scripts
+    cache:
+        <<: *global_cache_settings
+        key: arm_cache-64
+        paths:
+            - ccache/
+            - depends/sources
+            - depends/built
+            - depends/aarch64-linux-gnu
+
+build-arm-depends-64:
+    stage: build_depends
+    extends: .cache-arm-64
+    script:
+        - apt-get install -y g++-aarch64-linux-gnu curl
+        - cd depends
+        - make HOST=aarch64-linux-gnu NO_QT=1 JOBS=`nproc`
+    artifacts:
+        paths:
+            - depends/aarch64-linux-gnu
+
+build-arm-64:
+    stage: build
+    extends: .cache-arm-64
+    needs: ["build-arm-depends-64"]
+    script:
+        - apt-get install -y g++-aarch64-linux-gnu curl
+        - ./autogen.sh
+        - CONFIG_SITE=$PWD/depends/aarch64-linux-gnu/share/config.site ./configure --prefix=/
+        - make -j4
+        - ccache --show-stats
+    dependencies:
+        - build-arm-depends-64
+
+#ARM32
+.cache-arm-32:
+    extends: .ccache_scripts
+    cache:
+        <<: *global_cache_settings
+        key: arm_cache-32
+        paths:
+            - ccache/
+            - depends/sources
+            - depends/built
+            - depends/arm-linux-gnueabihf
+
+build-arm-depends-32:
+    stage: build_depends
+    extends: .cache-arm-32
+    script:
+        - apt-get install -y g++-arm-linux-gnueabihf curl
+        - cd depends
+        - make HOST=arm-linux-gnueabihf NO_QT=1 JOBS=`nproc`
+    artifacts:
+        paths:
+            - depends/arm-linux-gnueabih
+
+build-arm-32:
+    stage: build
+    extends: .cache-arm-32
+    needs: ["build-arm-depends-32"]
+    script:
+        - apt-get install -y g++-arm-linux-gnueabihf curl
+        - ./autogen.sh
+        - CONFIG_SITE=$PWD/depends/arm-linux-gnueabihf/share/config.site ./configure --prefix=/
+        - make -j4
+        - ccache --show-stats
+    dependencies:
+        - build-arm-depends-32
+
+#Win64
+.cache-win-64:
+    extends: .ccache_scripts
+    cache:
+        <<: *global_cache_settings
+        key: win_cache-64
+        paths:
+            - ccache/
+            - depends/sources
+            - depends/built
+            - depends/x86_64-w64-mingw32
+
+build-win-64-depends:
+    stage: build_depends
+    extends: .cache-win-64
+    script:
+        - apt-get update
+        - apt-get install -y python3 nsis g++-mingw-w64-x86-64 wine64 wine-binfmt
+        - update-alternatives --set x86_64-w64-mingw32-g++ /usr/bin/x86_64-w64-mingw32-g++-posix
+        - cd depends
+        - make HOST=x86_64-w64-mingw32 NO_QT=1 JOBS=`nproc`
+    artifacts:
+        paths:
+            - depends/x86_64-w64-mingw32
+
+build-win-64:
+    stage: build
+    extends: .cache-win-64
+    needs: ["build-win-64-depends"]
+    script:
+        - apt-get update
+        - apt-get install -y python3 nsis g++-mingw-w64-x86-64 wine64 wine-binfmt
+        - update-alternatives --set x86_64-w64-mingw32-g++ /usr/bin/x86_64-w64-mingw32-g++-posix
+        - ./autogen.sh
+        - CONFIG_SITE=$PWD/depends/x86_64-w64-mingw32/share/config.site ./configure --prefix=/
+        - make -j4
+        - ccache --show-stats
+    dependencies:
+        - build-win-64-depends
+
+#Win32
+.cache-win-32:
+    extends: .ccache_scripts
+    cache:
+        <<: *global_cache_settings
+        key: win_cache-32
+        paths:
+            - ccache/
+            - depends/sources
+            - depends/built
+            - depends/i686-w64-mingw32
+
+build-win-32-depends:
+    stage: build_depends
+    extends: .cache-win-32
+    script:
+        - dpkg --add-architecture i386
+        - apt-get update
+        - apt-get install -y python3 nsis g++-mingw-w64-i686 wine32 wine-binfmt
+        - update-alternatives --set i686-w64-mingw32-g++ /usr/bin/i686-w64-mingw32-g++-posix
+        - cd depends
+        - make HOST=i686-w64-mingw32 NO_QT=1 JOBS=`nproc`
+    artifacts:
+        paths:
+            - depends/i686-w64-mingw32
+
+build-win-32:
+    stage: build
+    extends: .cache-win-32
+    needs: ["build-win-32-depends"]
+    script:
+        - dpkg --add-architecture i386
+        - apt-get update
+        - apt-get install -y python3 nsis g++-mingw-w64-i686 wine32 wine-binfmt
+        - update-alternatives --set i686-w64-mingw32-g++ /usr/bin/i686-w64-mingw32-g++-posix
+        - ./autogen.sh
+        - CONFIG_SITE=$PWD/depends/i686-w64-mingw32/share/config.site ./configure --prefix=/
+        - make -j4
+        - ccache --show-stats
+    dependencies:
+        - build-win-32-depends
+
+#Linux32-bit + dash
+
+
+#Cross-Mac
+.cache-osx:
+    extends: .ccache_scripts
+    cache:
+        <<: *global_cache_settings
+        key: osx_cache
+        paths:
+            - ccache/
+            - depends/sources
+            - depends/built
+            - depends/x86_64-apple-darwin14
