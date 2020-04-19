@@ -70,8 +70,9 @@ bool fCheckBlockIndex = false;
 bool fCheckpointsEnabled = DEFAULT_CHECKPOINTS_ENABLED;
 size_t nCoinCacheUsage = 5000 * 300;
 
-/** Fees smaller than this (in satoshi) are considered zero fee (for relaying, mining and transaction creation) */
+/** Fees smaller than this (in satoshi) are considered zero fee for relaying */
 CFeeRate minRelayTxFee = CFeeRate(DEFAULT_MIN_RELAY_TX_FEE);
+CFeeRate minMinerTxFee = CFeeRate(DEFAULT_MIN_MINER_TX_FEE);
 
 CTxMemPool mempool(::minRelayTxFee);
 
@@ -468,27 +469,12 @@ bool AcceptToMemoryPoolWorker(CTxMemPool &pool,
                 strprintf("%d < %d", nFees, mempoolRejectFee));
         }
 
-        // Continuously rate-limit free (really, very-low-fee) transactions
-        // This mitigates 'penny-flooding' -- sending thousands of free transactions just to
-        // be annoying or make others' transactions take longer to confirm.
-        static const double maxFeeCutoff =
-            boost::lexical_cast<double>(gArgs.GetArg("-maxlimitertxfee", DEFAULT_MAXLIMITERTXFEE));
-        // starting value for feeCutoff in satoshi per byte
-        static const double initFeeCutoff =
-            boost::lexical_cast<double>(gArgs.GetArg("-minlimitertxfee", DEFAULT_MINLIMITERTXFEE));
         static const int nLimitFreeRelay = gArgs.GetArg("-limitfreerelay", DEFAULT_LIMITFREERELAY);
 
         // get current memory pool size
         uint64_t poolBytes = pool.GetTotalTxSize();
-
-        // Calculate feeCutoff in satoshis per byte:
-        //   When the feeCutoff is larger than the satoshiPerByte of the
-        //   current transaction then spam blocking will be in effect. However
-        //   Some free transactions will still get through based on -limitfreerelay
-        static double feeCutoff = initFeeCutoff;
         static double nFreeLimit = nLimitFreeRelay;
         static int64_t nLastTime = GetTime();
-
         int64_t nNow = GetTime();
 
         // When the mempool starts falling use an exponentially decaying ~24 hour window:
@@ -496,37 +482,28 @@ bool AcceptToMemoryPoolWorker(CTxMemPool &pool,
         // (double)(nNow - nLastTime)));
         nFreeLimit /= std::pow(1.0 - 1.0 / 86400, (double)(nNow - nLastTime));
 
-        // When the mempool starts falling use an exponentially decaying ~24 hour window:
-        feeCutoff *= std::pow(1.0 - 1.0 / 86400, (double)(nNow - nLastTime));
-
-        uint64_t nLargestBlockSeen = MAX_BLOCK_SIZE;
-        if (poolBytes < nLargestBlockSeen)
+        if (poolBytes < MAX_BLOCK_SIZE)
         {
-            feeCutoff = std::max(feeCutoff, initFeeCutoff);
             nFreeLimit = std::min(nFreeLimit, (double)nLimitFreeRelay);
         }
-        else if (poolBytes < (nLargestBlockSeen * MAX_BLOCK_SIZE_MULTIPLIER))
+        else if (poolBytes < (MAX_BLOCK_SIZE * MAX_BLOCK_SIZE_MULTIPLIER))
         {
-            // Gradually choke off what is considered a free transaction
-            feeCutoff =
-                std::max(feeCutoff, initFeeCutoff + ((maxFeeCutoff - initFeeCutoff) * (poolBytes - nLargestBlockSeen) /
-                                                        (nLargestBlockSeen * (MAX_BLOCK_SIZE_MULTIPLIER - 1))));
-
             // Gradually choke off the nFreeLimit as well but leave at least DEFAULT_MIN_LIMITFREERELAY
             // So that some free transactions can still get through
             nFreeLimit = std::min(
                 nFreeLimit, ((double)nLimitFreeRelay - ((double)(nLimitFreeRelay - DEFAULT_MIN_LIMITFREERELAY) *
-                                                           (double)(poolBytes - nLargestBlockSeen) /
-                                                           (nLargestBlockSeen * (MAX_BLOCK_SIZE_MULTIPLIER - 1)))));
+                                                           (double)(poolBytes - MAX_BLOCK_SIZE) /
+                                                           (MAX_BLOCK_SIZE * (MAX_BLOCK_SIZE_MULTIPLIER - 1)))));
             if (nFreeLimit < DEFAULT_MIN_LIMITFREERELAY)
+            {
                 nFreeLimit = DEFAULT_MIN_LIMITFREERELAY;
+            }
         }
         else
         {
-            feeCutoff = maxFeeCutoff;
             nFreeLimit = DEFAULT_MIN_LIMITFREERELAY;
         }
-        minRelayTxFee = CFeeRate(feeCutoff * 1000);
+
         LogPrint("MEMPOOL",
             "MempoolBytes:%d  LimitFreeRelay:%.5g  FeeCutOff:%.4g  FeesSatoshiPerByte:%.4g  TxBytes:%d  TxFees:%d\n",
             poolBytes, nFreeLimit, ((double)::minRelayTxFee.GetFee(nSize)) / nSize, ((double)nFees) / nSize, nSize,
@@ -548,19 +525,12 @@ bool AcceptToMemoryPoolWorker(CTxMemPool &pool,
             dFreeCount += nSize;
         }
 
-        if (fRejectAbsurdFee && tx.nVersion == 1 && nFees > maxTxFee)
+        if (fRejectAbsurdFee && nFees > maxTxFee)
         {
             LogPrintf("Absurdly-high-fee of %d for tx with version of 1 \n", nFees);
             return state.Invalid(false, REJECT_HIGHFEE, "absurdly-high-fee",
                 strprintf("%d > %d", nFees, ::minRelayTxFee.GetFee(nSize) * 10000));
         }
-
-        if (fRejectAbsurdFee && tx.nVersion == 2 && nFees > 100000000)
-        {
-            LogPrintf("Absurdly-high-fee of %d for tx with version of 2 \n", nFees);
-            return state.Invalid(false, REJECT_HIGHFEE, "absurdly-high-fee", strprintf("%d > %d", nFees, 100000000));
-        }
-
 
         // Calculate in-mempool ancestors, up to a limit.
         CTxMemPool::setEntries setAncestors;

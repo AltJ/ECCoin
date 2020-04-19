@@ -108,7 +108,9 @@ UniValue getinfo(const UniValue &params, bool fHelp)
         }
     }
     obj.push_back(Pair("paytxfee", ValueFromAmount(payTxFee.GetFeePerK())));
-    obj.push_back(Pair("relayfee", ValueFromAmount(::minRelayTxFee.GetFeePerK())));
+    obj.push_back(Pair("relayfee (tx relay)", ValueFromAmount(::minRelayTxFee.GetFeePerK())));
+    obj.push_back(Pair("minerfee (tx inclusion in block)", ValueFromAmount(::minMinerTxFee.GetFeePerK())));
+    obj.push_back(Pair("minfee (tx creation)", ValueFromAmount(CWallet::minTxFee.GetFeePerK())));
     obj.push_back(Pair("errors", GetWarnings("statusbar")));
     return obj;
 }
