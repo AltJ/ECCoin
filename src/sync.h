@@ -210,7 +210,7 @@ void static inline EnterCritical(const char *pszName,
 {
 }
 void static inline LeaveCritical(void *cs) {}
-void static inline DeleteLock(void *cs) {}
+void static inline DeleteCritical(void *cs) {}
 void static inline AssertLockHeldInternal(const char *pszName, const char *pszFile, unsigned int nLine, void *cs) {}
 void static inline AssertLockNotHeldInternal(const char *pszName, const char *pszFile, unsigned int nLine, void *cs) {}
 void static inline AssertWriteLockHeldInternal(const char *pszName,
@@ -258,7 +258,6 @@ private:
         line = nLine;
         EnterCritical(pszName, pszFile, nLine, (void *)(lock.mutex()), type, OwnershipType::EXCLUSIVE, false);
         lock.lock();
-        SetWaitingToHeld((void *)(lock.mutex()), OwnershipType::EXCLUSIVE);
 #ifdef DEBUG_LOCKTIME
         lockedTime = GetStopwatch();
         if (lockedTime - startWait > LOCK_WARN_TIME)
@@ -370,7 +369,6 @@ private:
         line = nLine;
         EnterCritical(pszName, pszFile, nLine, (void *)(lock.mutex()), type, OwnershipType::SHARED, false);
         lock.lock();
-        SetWaitingToHeld((void *)(lock.mutex()), OwnershipType::SHARED);
 #ifdef DEBUG_LOCKTIME
         lockedTime = GetStopwatch();
         if (lockedTime - startWait > LOCK_WARN_TIME)
