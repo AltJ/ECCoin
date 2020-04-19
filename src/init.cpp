@@ -567,9 +567,14 @@ std::string HelpMessage()
             strprintf("Limit size of signature cache to <n> MiB (default: %u)", DEFAULT_MAX_SIG_CACHE_SIZE));
     }
     strUsage += HelpMessageOpt(
-        "-minrelaytxfee=<amt>", strprintf(("Fees (in %s/kB) smaller than this are considered zero fee for relaying, "
-                                           "mining and transaction creation (default: %s)"),
+        "-minrelaytxfee=<amt>", strprintf(("Fees (in %s/kB) smaller than this are considered zero fee for relaying "
+                                           "transactions (default: %s)"),
                                     CURRENCY_UNIT, FormatMoney(DEFAULT_MIN_RELAY_TX_FEE)));
+    strUsage += HelpMessageOpt(
+        "-minminertxfee=<amt>", strprintf(("Fees (in %s/kB) smaller than this are considered zero fee when "
+                                           "mining or minting new blocks (default: %s)"),
+                                    CURRENCY_UNIT, FormatMoney(DEFAULT_MIN_MINER_TX_FEE)));
+                                    
     strUsage += HelpMessageOpt("-printtoconsole", ("Send trace/debug info to console instead of debug.log file"));
     if (showDebug)
     {

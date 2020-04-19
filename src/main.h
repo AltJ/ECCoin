@@ -48,6 +48,9 @@ static const bool DEFAULT_WHITELISTRELAY = true;
 static const bool DEFAULT_WHITELISTFORCERELAY = true;
 /** Default for -minrelaytxfee, minimum relay fee for transactions (satoshis per KB) */
 static const unsigned int DEFAULT_MIN_RELAY_TX_FEE = 1000;
+/** Default for -minminerfee, minimum relay fee for mining transactions (satoshis per KB) */
+static const unsigned int DEFAULT_MIN_MINER_TX_FEE = 1000;
+
 /** Default for -maxorphantx, maximum number of orphan transactions kept in memory */
 static const unsigned int DEFAULT_MAX_ORPHAN_TRANSACTIONS = 100;
 /** Default for -limitancestorcount, max number of in-mempool ancestors */
@@ -113,10 +116,6 @@ static const unsigned int DEFAULT_BANSCORE_THRESHOLD = 100;
 static const bool DEFAULT_TESTSAFEMODE = false;
 /** The minimum value possible for -limitfreerelay when rate limiting */
 static const unsigned int DEFAULT_MIN_LIMITFREERELAY = 1;
-/** The default value for -minrelaytxfee */
-static const char DEFAULT_MINLIMITERTXFEE[] = "0.000";
-/** The default value for -maxrelaytxfee */
-static const char DEFAULT_MAXLIMITERTXFEE[] = "3.000";
 /** The number of block heights to gradually choke spam transactions over */
 static const unsigned int MAX_BLOCK_SIZE_MULTIPLIER = 3;
 
@@ -146,6 +145,7 @@ extern bool fCheckBlockIndex;
 extern bool fCheckpointsEnabled;
 extern size_t nCoinCacheUsage;
 extern CFeeRate minRelayTxFee;
+extern CFeeRate minMinerTxFee;
 
 /** Global variable that points to the active CCoinsView */
 extern std::unique_ptr<CCoinsViewCache> pcoinsTip GUARDED_BY(cs_main);

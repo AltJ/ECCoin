@@ -230,7 +230,7 @@ std::unique_ptr<CBlockTemplate> CreateNewPoWBlock(CWallet *pwallet, const CScrip
                 waitPriMap.clear();
             }
             if (!priorityTx &&
-                (iter->GetModifiedFee() < ::minRelayTxFee.GetFee(nTxSize) && nBlockSize >= nBlockMinSize))
+                (iter->GetModifiedFee() < ::minMinerTxFee.GetFee(nTxSize) && nBlockSize >= nBlockMinSize))
             {
                 break;
             }
