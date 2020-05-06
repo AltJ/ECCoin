@@ -1563,7 +1563,6 @@ bool CWalletTx::IsEquivalentTo(const CWalletTx &_tx) const
 std::vector<uint256> CWallet::ResendWalletTransactionsBefore(int64_t nTime, CConnman *connman)
 {
     std::vector<uint256> result;
-
     std::multimap<unsigned int, CWalletTx> mapSorted;
     {
         LOCK(cs_wallet);

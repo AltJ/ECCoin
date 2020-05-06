@@ -21,8 +21,10 @@
 #include "key.h"
 #include "main.h"
 #include "net/addrman.h"
+#include "net/dosman.h"
 #include "net/messages.h"
 #include "net/net.h"
+#include "net/requestmanager.h"
 #include "networks/netman.h"
 #include "networks/networktemplate.h"
 #include "policy/policy.h"
@@ -574,7 +576,7 @@ std::string HelpMessage()
         "-minminertxfee=<amt>", strprintf(("Fees (in %s/kB) smaller than this are considered zero fee when "
                                            "mining or minting new blocks (default: %s)"),
                                     CURRENCY_UNIT, FormatMoney(DEFAULT_MIN_MINER_TX_FEE)));
-                                    
+
     strUsage += HelpMessageOpt("-printtoconsole", ("Send trace/debug info to console instead of debug.log file"));
     if (showDebug)
     {
@@ -1233,6 +1235,12 @@ bool AppInit2(thread_group &threadGroup)
     g_connman = std::unique_ptr<CConnman>(
         new CConnman(GetRand(std::numeric_limits<uint64_t>::max()), GetRand(std::numeric_limits<uint64_t>::max())));
     CConnman &connman = *g_connman;
+
+    assert(!g_dosman);
+    g_dosman = std::unique_ptr<CDoSManager>(new CDoSManager());
+
+    assert(!g_requestman);
+    g_requestman = std::unique_ptr<CRequestManager>(new CRequestManager());
 
     peerLogic.reset(new PeerLogicValidation(&connman));
     RegisterValidationInterface(peerLogic.get());

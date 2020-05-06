@@ -6,6 +6,8 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#ifndef ECCOIN_NODESTATE_H
+#define ECCOIN_NODESTATE_H
 
 #include "messages.h"
 #include "net.h"
@@ -20,13 +22,6 @@ struct CNodeState
 {
     //! The peer's address
     CService address;
-    //! Whether we have a fully established connection.
-    bool fCurrentlyConnected;
-    //! Accumulated misbehaviour score for this peer.
-    int nMisbehavior;
-    //! Whether this peer should be disconnected and banned (unless
-    //! whitelisted).
-    bool fShouldBan;
     //! String name of this peer (debugging/logging purposes).
     std::string name;
     //! The best known block we know this peer has announced.
@@ -37,118 +32,37 @@ struct CNodeState
     CBlockIndex *pindexLastCommonBlock;
     //! The best header we have sent our peer.
     CBlockIndex *pindexBestHeaderSent;
-    //! Length of current-streak of unconnecting headers announcements
-    int nUnconnectingHeaders;
     //! Whether we've started headers synchronization with this peer.
     bool fSyncStarted;
-
-    std::list<QueuedBlock> vBlocksInFlight;
-    //! When the first entry in vBlocksInFlight started downloading. Don't care
-    //! when vBlocksInFlight is empty.
-    int64_t nDownloadingSince;
-    int nBlocksInFlight;
-    int nBlocksInFlightValidHeaders;
+    //! The start time of the sync
+    int64_t nSyncStartTime;
+    //! Were the first headers requested in a sync received
+    bool fFirstHeadersReceived;
+    //! Our current block height at the time we requested GETHEADERS
+    int nFirstHeadersExpectedHeight;
+    //! During IBD we need to update the block availabiity for each peer. We do this by requesting a header
+    //  when a peer connects and also when we ask for the initial set of all headers.
+    bool fRequestedInitialBlockAvailability;
     //! Whether we consider this a preferred download peer.
     bool fPreferredDownload;
     //! Whether this peer wants invs or headers (when possible) for block
     //! announcements.
     bool fPreferHeaders;
-    /**
-     * Whether this peer will send us cmpctblocks if we request them.
-     * This is not used to gate request logic, as we really only care about
-     * fSupportsDesiredCmpctVersion, but is used as a flag to "lock in" the
-     * version of compact blocks we send.
-     */
-    bool fProvidesHeaderAndIDs;
-    /**
-     * If we've announced NODE_WITNESS to this peer: whether the peer sends
-     * witnesses in cmpctblocks/blocktxns, otherwise: whether this peer sends
-     * non-witnesses in cmpctblocks/blocktxns.
-     */
-    bool fSupportsDesiredCmpctVersion;
 
     CNodeState(CAddress addrIn, std::string addrNameIn) : address(addrIn), name(addrNameIn)
     {
-        fCurrentlyConnected = false;
-        nMisbehavior = 0;
-        fShouldBan = false;
         pindexBestKnownBlock = nullptr;
         hashLastUnknownBlock.SetNull();
         pindexLastCommonBlock = nullptr;
         pindexBestHeaderSent = nullptr;
-        nUnconnectingHeaders = 0;
         fSyncStarted = false;
-        nDownloadingSince = 0;
-        nBlocksInFlight = 0;
-        nBlocksInFlightValidHeaders = 0;
+        nSyncStartTime = -1;
+        fFirstHeadersReceived = false;
+        nFirstHeadersExpectedHeight = -1;
+        fRequestedInitialBlockAvailability = false;
         fPreferredDownload = false;
         fPreferHeaders = false;
-        fProvidesHeaderAndIDs = false;
-        fSupportsDesiredCmpctVersion = false;
     }
 };
 
-class CNodesStateManager
-{
-protected:
-    CCriticalSection cs_nodestateman;
-    std::map<NodeId, CNodeState> mapNodeState;
-    friend class CNodeStateAccessor;
-
-public:
-    CNodeState *_GetNodeState(const NodeId id);
-
-    /** Add a nodestate from the map */
-    void InitializeNodeState(const CNode *pnode);
-
-    /** Delete a nodestate from the map */
-    void RemoveNodeState(const NodeId id);
-
-    /** Clear the entire nodestate map */
-    void Clear()
-    {
-        LOCK(cs_nodestateman);
-        mapNodeState.clear();
-    }
-
-    /** Is mapNodestate empty */
-    bool Empty()
-    {
-        LOCK(cs_nodestateman);
-        return mapNodeState.empty();
-    }
-};
-
-class CNodeStateAccessor
-{
-    CCriticalSection *cs;
-    CNodeState *obj;
-
-public:
-    CNodeStateAccessor(CCriticalSection *_cs, CNodeState *_obj) : cs(_cs), obj(_obj)
-    {
-        EnterCritical("CNodeStateAccessor.cs", __FILE__, __LINE__, (void *)(&cs), LockType::RECURSIVE_MUTEX,
-            OwnershipType::EXCLUSIVE);
-    }
-    CNodeStateAccessor(CNodesStateManager &ns, const NodeId id)
-    {
-        cs = &ns.cs_nodestateman;
-        EnterCritical("CNodeStateAccessor.cs", __FILE__, __LINE__, (void *)(&cs), LockType::RECURSIVE_MUTEX,
-            OwnershipType::EXCLUSIVE);
-        obj = ns._GetNodeState(id);
-    }
-
-    CNodeState *operator->() { return obj; }
-    CNodeState &operator*() { return *obj; }
-    bool operator!=(void *ptr) { return obj != ptr; }
-    bool operator==(void *ptr) { return obj == ptr; }
-    bool IsNull() { return obj == nullptr; }
-    CNodeState *Get() { return obj; }
-    ~CNodeStateAccessor()
-    {
-        obj = nullptr;
-        LeaveCritical(&cs);
-    }
-};
-
-extern CNodesStateManager nodestateman;
+#endif

@@ -137,8 +137,7 @@ class WalletBackupTest(BitcoinTestFramework):
         # Generate 101 more blocks, so any fees paid mature
         self.nodes[3].generate(1)
         self.sync_all()
-        for i in range(4):
-            self.nodes[3].generate(25)
+        self.nodes[3].generate(100)
         self.sync_all()
 
         balance0 = self.nodes[0].getbalance()

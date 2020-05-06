@@ -19,6 +19,8 @@
 #include "txmempool.h"
 #include "undo.h"
 
+extern std::map<uint256, std::pair<CBlockHeader, int64_t> > mapUnConnectedHeaders;
+
 CBlockIndex *CChainManager::LookupBlockIndex(const uint256 &hash)
 {
     RECURSIVEREADLOCK(cs_mapBlockIndex);
@@ -466,6 +468,7 @@ void CChainManager::UnloadBlockIndex()
     }
     LOCK(cs_main);
     setBlockIndexCandidates.clear();
+    mapUnConnectedHeaders.clear();
     chainActive.SetTip(nullptr);
     pindexBestInvalid = nullptr;
     pindexBestHeader = nullptr;
@@ -474,12 +477,9 @@ void CChainManager::UnloadBlockIndex()
     vinfoBlockFile.clear();
     nLastBlockFile = 0;
     nBlockSequenceId = 1;
-    mapBlockSource.clear();
-    mapBlocksInFlight.clear();
     nPreferredDownload = 0;
     setDirtyBlockIndex.clear();
     setDirtyFileInfo.clear();
-    nodestateman.Clear();
     recentRejects.reset(nullptr);
 
     {
