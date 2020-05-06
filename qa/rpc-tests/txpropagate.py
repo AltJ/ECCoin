@@ -39,20 +39,17 @@ class TxPropagationTest (BitcoinTestFramework):
         # generate non-empty blocks on the mining node to get a balance
         for x in range(0, 50):
             self.nodes[0].generate(1)
-            self.sync_blocks()
+
+        self.sync_blocks()
 
         self.nodes[0].sendtoaddress(self.nodes[1].getnewaddress(), 100)
-        time.sleep(1)
-        time.sleep(1)
-        time.sleep(1)
-        self.nodes[0].resendwallettransactions()
-        time.sleep(1)
-        time.sleep(1)
-        time.sleep(1)
-        self.nodes[1].resendwallettransactions()
-        time.sleep(1)
-        time.sleep(1)
-        time.sleep(1)
+        time.sleep(2)
+        resent = self.nodes[0].resendwallettransactions()
+        print("resent transactions: ", resent)
+        time.sleep(2)
+        resent = self.nodes[1].resendwallettransactions()
+        print("resent transactions: ", resent)
+        time.sleep(2)
         # test tx propagated to second node
         assert_equal(self.nodes[0].getrawmempool(), self.nodes[1].getrawmempool())
         assert_equal(self.nodes[1].getrawmempool(), self.nodes[2].getrawmempool())

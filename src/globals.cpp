@@ -7,8 +7,10 @@
 #include "fs.h"
 #include "main.h"
 #include "net/aodv.h"
+#include "net/dosman.h"
 #include "net/messages.h"
 #include "net/packetmanager.h"
+#include "net/requestmanager.h"
 #include "deadlock-detection/threaddeadlock.h"
 #include "txdb.h"
 #include "wallet/wallet.h"
@@ -25,7 +27,6 @@ LockData lockdata;
 CCriticalSection cs_main;
 CCriticalSection cs_orphans;
 CCriticalSection cs_blockstorage;
-CCriticalSection cs_mapRelay;
 
 /**
  * Every received block is assigned a unique and increasing identifier, so we
@@ -49,6 +50,8 @@ std::unique_ptr<CBlockTreeDB> pblocktree GUARDED_BY(cs_main);
  * missing the data for the block.
  */
 std::set<CBlockIndex *, CBlockIndexWorkComparator> setBlockIndexCandidates GUARDED_BY(cs_main);
+/** A cache to store headers that have arrived but can not yet be connected **/
+std::map<uint256, std::pair<CBlockHeader, int64_t> > mapUnConnectedHeaders GUARDED_BY(cs_main);
 
 CCriticalSection cs_mapLocalHost;
 std::map<CNetAddr, LocalServiceInfo> mapLocalHost;
@@ -77,7 +80,8 @@ fs::path pathCachedNetSpecific;
 CWallet *pwalletMain = nullptr;
 CNetworkManager *pnetMan = nullptr;
 std::unique_ptr<CConnman> g_connman;
+std::unique_ptr<CDoSManager> g_dosman;
 std::unique_ptr<PeerLogicValidation> peerLogic;
-
+std::unique_ptr<CRequestManager> g_requestman;
 CAodvRouteTable g_aodvtable;
 CPacketManager g_packetman;

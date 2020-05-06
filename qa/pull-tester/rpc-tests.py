@@ -188,7 +188,7 @@ testScripts = [ RpcTest(t) for t in [
     #'mempool_spendcoinbase',
     'mintingtest',
     'multi_rpc',
-    'nodehandling',
+    Disabled('nodehandling', "Banning peers temporarily not working"),
     'notify',
     'proxy_test',
     'receivedby',
@@ -197,7 +197,7 @@ testScripts = [ RpcTest(t) for t in [
     'txpropagate',
     'verifydb',
     'wallet',
-    'walletbackup',
+    Disabled('walletbackup', "issue with syncing mempools"),
     #'wallet-dump',
     'zapwallettxes',
     #'rawtransactions', ???

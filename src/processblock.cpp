@@ -26,6 +26,7 @@
 #include "main.h"
 #include "net/messages.h"
 #include "net/net.h"
+#include "net/requestmanager.h"
 #include "networks/netman.h"
 #include "networks/networktemplate.h"
 #include "policy/policy.h"
@@ -1520,7 +1521,7 @@ bool ProcessNewBlock(CValidationState &state,
     {
         LOCK(cs_main);
         RECURSIVEWRITELOCK(pnetMan->getChainActive()->cs_mapBlockIndex);
-        bool fRequested = MarkBlockAsReceived(pblock->GetHash());
+        bool fRequested = g_requestman->MarkBlockAsReceived(pblock->GetHash());
         fRequested |= fForceProcessing;
         if (!checked)
         {

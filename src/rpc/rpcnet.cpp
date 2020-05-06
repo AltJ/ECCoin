@@ -9,10 +9,13 @@
 
 #include "clientversion.h"
 #include "main.h"
+#include "net/connman.h"
+#include "net/dosman.h"
 #include "net/messages.h"
 #include "net/net.h"
 #include "net/netbase.h"
 #include "net/protocol.h"
+#include "net/requestmanager.h"
 #include "networks/netman.h"
 #include "sync.h"
 #include "timedata.h"
@@ -116,7 +119,7 @@ UniValue getpeerinfo(const UniValue &params, bool fHelp)
     {
         UniValue obj(UniValue::VOBJ);
         CNodeStateStats statestats;
-        bool fStateStats = GetNodeStateStats(stats.nodeid, statestats);
+        bool fStateStats = g_requestman->GetNodeStateStats(stats.nodeid, statestats);
         obj.push_back(Pair("id", stats.nodeid));
         obj.push_back(Pair("addr", stats.addrName));
         if (!(stats.addrLocal.empty()))
@@ -499,7 +502,7 @@ UniValue setban(const UniValue &params, bool fHelp)
                                  HelpExampleRpc("setban", "\"192.168.0.6\", \"add\", 86400"));
     }
 
-    if (!g_connman)
+    if (!g_connman || !g_dosman)
     {
         throw JSONRPCError(RPC_CLIENT_P2P_DISABLED, "Error: Peer-to-peer functionality missing or disabled");
     }
@@ -531,7 +534,7 @@ UniValue setban(const UniValue &params, bool fHelp)
 
     if (strCommand == "add")
     {
-        if (isSubnet ? g_connman->IsBanned(subNet) : g_connman->IsBanned(netAddr))
+        if (isSubnet ? g_dosman->IsBanned(subNet) : g_dosman->IsBanned(netAddr))
         {
             throw JSONRPCError(RPC_CLIENT_NODE_ALREADY_ADDED, "Error: IP/Subnet already banned");
         }
@@ -549,12 +552,12 @@ UniValue setban(const UniValue &params, bool fHelp)
             absolute = true;
         }
 
-        isSubnet ? g_connman->Ban(subNet, BanReasonManuallyAdded, banTime, absolute) :
-                   g_connman->Ban(netAddr, BanReasonManuallyAdded, banTime, absolute);
+        isSubnet ? g_dosman->Ban(subNet, BanReasonManuallyAdded, banTime, absolute) :
+                   g_dosman->Ban(netAddr, BanReasonManuallyAdded, banTime, absolute);
     }
     else if (strCommand == "remove")
     {
-        if (!(isSubnet ? g_connman->Unban(subNet) : g_connman->Unban(netAddr)))
+        if (!(isSubnet ? g_dosman->Unban(subNet) : g_dosman->Unban(netAddr)))
         {
             throw JSONRPCError(RPC_CLIENT_INVALID_IP_OR_SUBNET, "Error: Unban failed. Requested address/subnet "
                                                                 "was not previously banned.");
@@ -571,12 +574,12 @@ UniValue listbanned(const UniValue &params, bool fHelp)
                                  "\nExamples:\n" +
                                  HelpExampleCli("listbanned", "") + HelpExampleRpc("listbanned", ""));
 
-    if (!g_connman)
+    if (!g_connman || !g_dosman)
         throw JSONRPCError(RPC_CLIENT_P2P_DISABLED, "Error: Peer-to-peer functionality missing or disabled");
 
 
     banmap_t banMap;
-    g_connman->GetBanned(banMap);
+    g_dosman->GetBanned(banMap);
 
     UniValue bannedAddresses(UniValue::VARR);
     for (banmap_t::iterator it = banMap.begin(); it != banMap.end(); it++)
@@ -602,10 +605,10 @@ UniValue clearbanned(const UniValue &params, bool fHelp)
                                  "\nExamples:\n" +
                                  HelpExampleCli("clearbanned", "") + HelpExampleRpc("clearbanned", ""));
 
-    if (!g_connman)
+    if (!g_connman || !g_dosman)
         throw JSONRPCError(RPC_CLIENT_P2P_DISABLED, "Error: Peer-to-peer functionality missing or disabled");
 
-    g_connman->ClearBanned();
+    g_dosman->ClearBanned();
 
     return NullUniValue;
 }

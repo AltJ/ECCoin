@@ -59,8 +59,7 @@ bool ActivateBestChain(CValidationState &state, const CNetworkTemplate &chainpar
  * if pblock is itself invalid (but this is not guaranteed even when the block is checked). If you want to *possibly*
  * get feedback on whether pblock is valid, you must also install a CValidationInterface (see validationinterface.h) -
  * this will have its BlockChecked method called whenever *any* block completes validation.
- * @param[in]   pfrom   The node which we are receiving the block from; it is added to mapBlockSource and may be
- * penalised if the block is invalid.
+ * @param[in]   pfrom   The node which we are receiving the block from; it may be penalised if the block is invalid.
  * @param[in]   pblock  The block we want to process.
  * @param[in]   fForceProcessing Process this block even if unrequested; used for non-network block sources and
  * whitelisted peers.

@@ -102,14 +102,20 @@ BITCOIN_CORE_H = \
   net/addrdb.h \
   net/addrman.h \
   net/aodv.h \
+  net/connman.h \
   net/datapacket.h \
+  net/dosman.h \
   net/messages.h \
   net/net.h \
   net/netaddress.h \
   net/netbase.h \
+  net/netconstants.h \
+  net/netmessage.h \
+  net/node.h \
   net/nodestate.h \
   net/packetmanager.h \
   net/protocol.h \
+  net/requestmanager.h \
   net/routingtag.h \
   net/tagdb.h \
   net/tagstore.h \
@@ -250,17 +256,21 @@ libbitcoin_server_a_SOURCES = \
   net/addrdb.cpp \
   net/addrman.cpp \
   net/aodv.cpp \
+  net/connman.cpp \
   net/datapacket.cpp \
+  net/dosman.cpp \
   net/messages.cpp \
   net/net.cpp \
   net/netaddress.cpp \
   net/netbase.cpp \
-  net/tagdb.cpp \
-  net/tagstore.cpp \
-  net/nodestate.cpp \
+  net/netmessage.cpp \
+  net/node.cpp \
   net/packetmanager.cpp \
   net/protocol.cpp \
+  net/requestmanager.cpp \
   net/routingtag.cpp \
+  net/tagdb.cpp \
+  net/tagstore.cpp \
   networks/netman.cpp \
   policy/fees.cpp \
   policy/policy.cpp \

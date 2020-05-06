@@ -15,7 +15,9 @@
 #include "fs.h"
 #include "key.h"
 #include "main.h"
+#include "net/dosman.h"
 #include "net/messages.h"
+#include "net/requestmanager.h"
 #include "processblock.h"
 #include "pubkey.h"
 #include "random.h"
@@ -44,6 +46,8 @@ BasicTestingSetup::BasicTestingSetup(const std::string &chainName)
     pnetMan->SetParams(chainName);
     // Deterministic randomness for tests.
     g_connman = std::make_unique<CConnman>(0x1337, 0x1337);
+    g_dosman = std::make_unique<CDoSManager>();
+    g_requestman = std::make_unique<CRequestManager>();
 }
 
 BasicTestingSetup::~BasicTestingSetup() { ECC_Stop(); }

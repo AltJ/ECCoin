@@ -61,8 +61,10 @@ std::atomic<int64_t> nTimeBestReceived(0);
 CWaitableCriticalSection csBestBlock;
 CConditionVariable cvBlockChange;
 int nScriptCheckThreads = 0;
-bool fImporting = false;
-bool fReindex = false;
+
+std::atomic<bool> fImporting{false};
+std::atomic<bool> fReindex{false};
+
 bool fIsBareMultisigStd = DEFAULT_PERMIT_BAREMULTISIG;
 bool fRequireStandard = true;
 unsigned int nBytesPerSigOp = DEFAULT_BYTES_PER_SIGOP;
@@ -126,7 +128,7 @@ std::set<CBlockIndex *> setDirtyBlockIndex;
 std::set<int> setDirtyFileInfo;
 
 /** Number of peers from which we're downloading blocks. */
-int nPeersWithValidatedDownloads = 0;
+std::atomic<int> nPeersWithValidatedDownloads{0};
 
 //////////////////////////////////////////////////////////////////////////////
 //

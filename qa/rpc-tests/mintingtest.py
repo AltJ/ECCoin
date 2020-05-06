@@ -24,7 +24,7 @@ from random import randint
 class MintingTest (BitcoinTestFramework):
 
     def __init__(self):
-        self.generatedblocks = 500
+        self.generatedblocks = 100
         self.mintedblocks = 3
         self.blockstotest = 5
         self.maxtxperblock = 3
@@ -50,7 +50,7 @@ class MintingTest (BitcoinTestFramework):
         # generate non-empty blocks on the mining node
         for x in range(0, self.generatedblocks):
             self.nodes[0].generate(1)
-            if x % 25 == 0:
+            if x % 100 == 0:
                 self.sync_blocks()
 
         self.sync_blocks()

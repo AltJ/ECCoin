@@ -104,7 +104,6 @@ net/netaddress.cpp
 net/netaddress.h
 net/netbase.cpp
 net/netbase.h
-net/nodestate.cpp
 net/nodestate.h
 net/protocol.cpp
 net/protocol.h

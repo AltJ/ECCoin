@@ -105,4 +105,6 @@ std::string ChainNameFromCommandLine();
 
 void CheckParams(const std::string &network);
 
+extern CNetworkManager *pnetMan;
+
 #endif // BITCOIN_CHAINPARAMSBASE_H

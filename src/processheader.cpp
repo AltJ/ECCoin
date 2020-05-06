@@ -41,7 +41,8 @@ bool AcceptBlockHeader(const CBlockHeader &block,
         CBlockIndex *pindexPrev = pnetMan->getChainActive()->LookupBlockIndex(block.hashPrevBlock);
         if (!pindexPrev)
         {
-            return state.DoS(10, error("%s: prev block not found", __func__), 0, "bad-prevblk");
+            // TODO : the dos here was reduced from 10 to 1 as a temporary light mitigation for odd/bad request patterns
+            return state.DoS(1, error("%s: prev block not found", __func__), 0, "bad-prevblk");
         }
         if (pindexPrev->nStatus & BLOCK_FAILED_MASK)
             return state.DoS(100, error("%s: prev block invalid", __func__), REJECT_INVALID, "bad-prevblk");
