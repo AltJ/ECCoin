@@ -28,7 +28,7 @@
 #include "net/netbase.h"
 #include "net/protocol.h"
 #include "net/tagstore.h"
-#include "networks/netman.h"
+#include "chain/chainparams.h"
 #include "random.h"
 #include "streams.h"
 #include "sync.h"
@@ -46,7 +46,7 @@
 /** Subversion as sent to the P2P network in `version` messages */
 extern std::string strSubVersion;
 
-extern CNetworkManager *pnetMan;
+
 
 class CTransaction;
 

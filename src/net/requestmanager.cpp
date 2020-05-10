@@ -5,6 +5,7 @@
 
 #include "requestmanager.h"
 
+#include "chain/chainman.h"
 #include "connman.h"
 
 extern std::atomic<int> nPreferredDownload;
@@ -72,7 +73,7 @@ void CRequestManager::RemoveNodeState(const NodeId id)
 /** Check whether the last unknown block a peer advertized is not yet known. */
 void CRequestManager::_ProcessBlockAvailability(NodeId nodeid)
 {
-    RECURSIVEREADLOCK(pnetMan->getChainActive()->cs_mapBlockIndex);
+    RECURSIVEREADLOCK(g_chainman.cs_mapBlockIndex);
     AssertWriteLockHeld(cs_requestmanager);
 
     std::map<NodeId, CNodeState>::iterator iter = mapNodeState.find(nodeid);
@@ -81,7 +82,7 @@ void CRequestManager::_ProcessBlockAvailability(NodeId nodeid)
 
     if (!state->hashLastUnknownBlock.IsNull())
     {
-        CBlockIndex *pindex = pnetMan->getChainActive()->LookupBlockIndex(state->hashLastUnknownBlock);
+        CBlockIndex *pindex = g_chainman.LookupBlockIndex(state->hashLastUnknownBlock);
         if (pindex && pindex->nChainWork > 0)
         {
             if (state->pindexBestKnownBlock == NULL || pindex->nChainWork >= state->pindexBestKnownBlock->nChainWork)
@@ -96,7 +97,7 @@ void CRequestManager::_ProcessBlockAvailability(NodeId nodeid)
 /** Check whether the last unknown block a peer advertized is not yet known. */
 void CRequestManager::ProcessBlockAvailability(NodeId nodeid)
 {
-    RECURSIVEREADLOCK(pnetMan->getChainActive()->cs_mapBlockIndex);
+    RECURSIVEREADLOCK(g_chainman.cs_mapBlockIndex);
     WRITELOCK(cs_requestmanager);
 
     std::map<NodeId, CNodeState>::iterator iter = mapNodeState.find(nodeid);
@@ -105,7 +106,7 @@ void CRequestManager::ProcessBlockAvailability(NodeId nodeid)
 
     if (!state->hashLastUnknownBlock.IsNull())
     {
-        CBlockIndex *pindex = pnetMan->getChainActive()->LookupBlockIndex(state->hashLastUnknownBlock);
+        CBlockIndex *pindex = g_chainman.LookupBlockIndex(state->hashLastUnknownBlock);
         if (pindex && pindex->nChainWork > 0)
         {
             if (state->pindexBestKnownBlock == NULL || pindex->nChainWork >= state->pindexBestKnownBlock->nChainWork)
@@ -120,7 +121,7 @@ void CRequestManager::ProcessBlockAvailability(NodeId nodeid)
 // TODO : currently needs cs_mapBlockIndex before locking this, should fix that
 void CRequestManager::UpdateBlockAvailability(NodeId nodeid, const uint256 &hash)
 {
-    CBlockIndex *pindex = pnetMan->getChainActive()->LookupBlockIndex(hash);
+    CBlockIndex *pindex = g_chainman.LookupBlockIndex(hash);
     ProcessBlockAvailability(nodeid);
     WRITELOCK(cs_requestmanager);
     std::map<NodeId, CNodeState>::iterator iter = mapNodeState.find(nodeid);
@@ -276,10 +277,10 @@ void CRequestManager::StartDownload(CNode* node)
     if (!state->fSyncStarted && !node->fClient && !fImporting && !fReindex)
     {
         if (fFetch ||
-            pnetMan->getChainActive()->pindexBestHeader.load()->GetBlockTime() > GetAdjustedTime() - 24 * 60 * 60)
+            g_chainman.pindexBestHeader.load()->GetBlockTime() > GetAdjustedTime() - 24 * 60 * 60)
         {
             state->fSyncStarted = true;
-            const CBlockIndex *pindexStart = pnetMan->getChainActive()->pindexBestHeader;
+            const CBlockIndex *pindexStart = g_chainman.pindexBestHeader;
             /**
              * If possible, start at the block preceding the currently best
              * known header. This ensures that we always get a non-empty list of
@@ -296,7 +297,7 @@ void CRequestManager::StartDownload(CNode* node)
             LogPrint("net", "initial getheaders (%d) to peer=%d (startheight:%d)\n", pindexStart->nHeight, node->id,
                 node->nStartingHeight);
             g_connman->PushMessage(
-                node, NetMsgType::GETHEADERS, pnetMan->getChainActive()->chainActive.GetLocator(pindexStart), uint256());
+                node, NetMsgType::GETHEADERS, g_chainman.chainActive.GetLocator(pindexStart), uint256());
         }
     }
 }
@@ -438,7 +439,7 @@ void CRequestManager::RequestNextBlocksToDownload(CNode* node)
                 g_connman->PushMessage(node, NetMsgType::GETDATA, vGetBlocks);
                 for (auto &block : vGetBlocks)
                 {
-                    MarkBlockAsInFlight(node->GetId(), block.hash, pnetMan->getChainActive()->LookupBlockIndex(block.hash));
+                    MarkBlockAsInFlight(node->GetId(), block.hash, g_chainman.LookupBlockIndex(block.hash));
                 }
             }
             else
@@ -466,14 +467,14 @@ void CRequestManager::FindNextBlocksToDownload(CNode *node, unsigned int count, 
     // Make sure pindexBestKnownBlock is up to date, we'll need it.
     ProcessBlockAvailability(nodeid);
 
-    RECURSIVEREADLOCK(pnetMan->getChainActive()->cs_mapBlockIndex);
+    RECURSIVEREADLOCK(g_chainman.cs_mapBlockIndex);
     WRITELOCK(cs_requestmanager);
     std::map<NodeId, CNodeState>::iterator iter = mapNodeState.find(node->GetId());
     assert(iter != mapNodeState.end());
     CNodeState* state = &iter->second;
 
     if (state->pindexBestKnownBlock == nullptr ||
-        state->pindexBestKnownBlock->nChainWork < pnetMan->getChainActive()->chainActive.Tip()->nChainWork)
+        state->pindexBestKnownBlock->nChainWork < g_chainman.chainActive.Tip()->nChainWork)
     {
         // This peer has nothing interesting.
         LogPrint("net", "not requesting blocks from peer %d, they do not have anything we need because ", node->GetId());
@@ -493,7 +494,7 @@ void CRequestManager::FindNextBlocksToDownload(CNode *node, unsigned int count, 
         // Bootstrap quickly by guessing a parent of our best tip is the forking point.
         // Guessing wrong in either direction is not a problem.
         state->pindexLastCommonBlock =
-            pnetMan->getChainActive()->chainActive[std::min(state->pindexBestKnownBlock->nHeight, pnetMan->getChainActive()->chainActive.Height())];
+            g_chainman.chainActive[std::min(state->pindexBestKnownBlock->nHeight, g_chainman.chainActive.Height())];
     }
 
     // If the peer reorganized, our previous pindexLastCommonBlock may not be an ancestor
@@ -510,7 +511,7 @@ void CRequestManager::FindNextBlocksToDownload(CNode *node, unsigned int count, 
     // Never fetch further than the current chain tip + the block download window.  We need to ensure
     // the if running in pruning mode we don't download too many blocks ahead and as a result use to
     // much disk space to store unconnected blocks.
-    int nWindowEnd = pnetMan->getChainActive()->chainActive.Height() + BLOCK_DOWNLOAD_WINDOW;
+    int nWindowEnd = g_chainman.chainActive.Height() + BLOCK_DOWNLOAD_WINDOW;
 
     int nMaxHeight = std::min<int>(state->pindexBestKnownBlock->nHeight, nWindowEnd + 1);
     while (pindexWalk->nHeight < nMaxHeight)
@@ -547,7 +548,7 @@ void CRequestManager::FindNextBlocksToDownload(CNode *node, unsigned int count, 
                 LogPrint("net", "we consider block with hash %s on a chain that is invalid, return \n", blockHash.ToString().c_str());
                 return;
             }
-            if (pindex->nStatus & BLOCK_HAVE_DATA || pnetMan->getChainActive()->chainActive.Contains(pindex))
+            if (pindex->nStatus & BLOCK_HAVE_DATA || g_chainman.chainActive.Contains(pindex))
             {
                 if (pindex->nChainTx)
                 {

@@ -16,7 +16,6 @@
 #include "net/netbase.h"
 #include "net/protocol.h"
 #include "net/requestmanager.h"
-#include "networks/netman.h"
 #include "sync.h"
 #include "timedata.h"
 

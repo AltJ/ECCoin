@@ -3,6 +3,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include "chain/chainman.h"
 #include "coins.h"
 #include "fs.h"
 #include "main.h"
@@ -35,8 +36,7 @@ CCriticalSection cs_blockstorage;
 CCriticalSection cs_nBlockSequenceId;
 CCriticalSection cs_LastBlockFile;
 
-CCriticalSection cs_nTimeOffset;
-int64_t nTimeOffset = 0;
+std::atomic<int64_t> nMedianTimeOffset{0};
 
 /** Global variable that points to the active CCoinsView */
 std::unique_ptr<CCoinsViewCache> pcoinsTip GUARDED_BY(cs_main);
@@ -76,12 +76,13 @@ fs::path pathCached;
 fs::path pathCachedNetSpecific;
 
 
-
 CWallet *pwalletMain = nullptr;
-CNetworkManager *pnetMan = nullptr;
 std::unique_ptr<CConnman> g_connman;
 std::unique_ptr<CDoSManager> g_dosman;
 std::unique_ptr<PeerLogicValidation> peerLogic;
 std::unique_ptr<CRequestManager> g_requestman;
 CAodvRouteTable g_aodvtable;
 CPacketManager g_packetman;
+
+CChainParams chainparams;
+CChainManager g_chainman;

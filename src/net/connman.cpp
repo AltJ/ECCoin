@@ -9,6 +9,7 @@
 
 #include "args.h"
 #include "beta.h"
+#include "chain/chainman.h"
 #include "consensus/consensus.h"
 #include "dosman.h"
 #include "messages.h"
@@ -532,7 +533,7 @@ std::vector<AddedNodeInfo> CConnman::GetAddedNodeInfo()
 
     for (const std::string &strAddNode : lAddresses)
     {
-        CService service(LookupNumeric(strAddNode.c_str(), pnetMan->getActivePaymentNetwork()->GetDefaultPort()));
+        CService service(LookupNumeric(strAddNode.c_str(), Params().GetDefaultPort()));
         if (service.IsValid())
         {
             // strAddNode is an IP:port
@@ -782,7 +783,7 @@ void CConnman::ThreadOpenAddedConnections()
                 // IP/port.
                 tried = true;
                 CService service(
-                    LookupNumeric(info.strAddedNode.c_str(), pnetMan->getActivePaymentNetwork()->GetDefaultPort()));
+                    LookupNumeric(info.strAddedNode.c_str(), Params().GetDefaultPort()));
                 OpenNetworkConnection(
                     CAddress(service, NODE_NONE), false, &grant, info.strAddedNode.c_str(), false, false, true);
                 MilliSleep(500);
@@ -997,7 +998,7 @@ void CConnman::ThreadOpenConnections()
 
             // do not allow non-default ports, unless after 50 invalid addresses
             // selected already.
-            if (addr.GetPort() != pnetMan->getActivePaymentNetwork()->GetDefaultPort() && nTries < 50)
+            if (addr.GetPort() != Params().GetDefaultPort() && nTries < 50)
             {
                 continue;
             }
@@ -1590,7 +1591,7 @@ void CConnman::ThreadDNSAddressSeed()
         }
     }
 
-    const std::vector<CDNSSeedData> &vSeeds = pnetMan->getActivePaymentNetwork()->DNSSeeds();
+    const std::vector<CDNSSeedData> &vSeeds = Params().DNSSeeds();
     int found = 0;
 
     LogPrintf("Loading addresses from DNS seeds (could take a while)\n");
@@ -1612,7 +1613,7 @@ void CConnman::ThreadDNSAddressSeed()
                 {
                     int nOneDay = 24 * 3600;
                     CAddress addr = CAddress(
-                        CService(ip, pnetMan->getActivePaymentNetwork()->GetDefaultPort()), requiredServiceBits);
+                        CService(ip, Params().GetDefaultPort()), requiredServiceBits);
                     // Use a random age between 3 and 7 days old.
                     addr.nTime = GetTime() - 3 * nOneDay - GetRand(4 * nOneDay);
                     vAdd.push_back(addr);
@@ -1801,7 +1802,7 @@ CNode *CConnman::ConnectNode(CAddress addrConnect, const char *pszDest, bool fCo
     SOCKET hSocket;
     bool proxyConnectionFailed = false;
     if (pszDest ? ConnectSocketByName(addrConnect, hSocket, pszDest,
-                      pnetMan->getActivePaymentNetwork()->GetDefaultPort(), nConnectTimeout, &proxyConnectionFailed) :
+                      Params().GetDefaultPort(), nConnectTimeout, &proxyConnectionFailed) :
                   ConnectSocket(addrConnect, hSocket, nConnectTimeout, &proxyConnectionFailed))
     {
         if (!IsSelectableSocket(hSocket))
@@ -2026,7 +2027,7 @@ void CConnman::InitializeNode(CNode *pnode)
 void CConnman::PushNodeVersion(CNode *pnode, int64_t nTime)
 {
     ServiceFlags nLocalNodeServices = pnode->GetLocalServices();
-    int nNodeStartingHeight = pnetMan->getChainActive()->chainActive.Height();
+    int nNodeStartingHeight = g_chainman.chainActive.Height();
     NodeId nodeid = pnode->GetId();
     CAddress addr = pnode->addr;
 

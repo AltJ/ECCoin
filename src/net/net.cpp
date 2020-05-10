@@ -17,7 +17,7 @@
 #include "crypto/hash.h"
 #include "init.h"
 #include "net/addrman.h"
-#include "networks/netman.h"
+#include "chain/chainparams.h"
 
 #include "util/utilstrencodings.h"
 
@@ -79,7 +79,7 @@ CNodeSignals &GetNodeSignals() { return g_signals; }
 
 unsigned short GetListenPort()
 {
-    return (unsigned short)(gArgs.GetArg("-port", pnetMan->getActivePaymentNetwork()->GetDefaultPort()));
+    return (unsigned short)(gArgs.GetArg("-port", Params().GetDefaultPort()));
 }
 
 // find 'best' local address for a particular peer

@@ -25,8 +25,6 @@
 #include "net/packetmanager.h"
 #include "net/protocol.h"
 #include "net/requestmanager.h"
-#include "networks/netman.h"
-#include "networks/networktemplate.h"
 #include "policy/fees.h"
 #include "policy/policy.h"
 #include "processblock.h"
@@ -234,7 +232,7 @@ void PeerLogicValidation::NewPoWValidBlock(CBlockIndex *pindex, const CBlock *pb
     }
     nHighestFastAnnounce = pindex->nHeight;
     uint256 hashBlock(pblock->GetHash());
-    RECURSIVEREADLOCK(pnetMan->getChainActive()->cs_mapBlockIndex);
+    RECURSIVEREADLOCK(g_chainman.cs_mapBlockIndex);
     connman->ForEachNode([this, pindex, &hashBlock](CNode *pnode) {
         // TODO: Avoid the repeated-serialization here
         if (pnode->fDisconnect)
@@ -260,10 +258,10 @@ bool AlreadyHaveBlock(const CInv &inv)
 {
     if (inv.type == MSG_BLOCK)
     {
-        RECURSIVEREADLOCK(pnetMan->getChainActive()->cs_mapBlockIndex);
-        if (pnetMan->getChainActive()->mapBlockIndex.count(inv.hash))
+        RECURSIVEREADLOCK(g_chainman.cs_mapBlockIndex);
+        if (g_chainman.mapBlockIndex.count(inv.hash))
         {
-            return (pnetMan->getChainActive()->mapBlockIndex[inv.hash]->nStatus & BLOCK_HAVE_DATA);
+            return (g_chainman.mapBlockIndex[inv.hash]->nStatus & BLOCK_HAVE_DATA);
         }
     }
     return false;
@@ -274,13 +272,13 @@ bool AlreadyHaveTx(const CInv &inv)
     if(inv.type == MSG_TX)
     {
         assert(recentRejects);
-        if (pnetMan->getChainActive()->chainActive.Tip()->GetBlockHash() != hashRecentRejectsChainTip)
+        if (g_chainman.chainActive.Tip()->GetBlockHash() != hashRecentRejectsChainTip)
         {
             // If the chain tip has changed previously rejected transactions
             // might be now valid, e.g. due to a nLockTime'd tx becoming valid,
             // or a double-spend. Reset the rejects filter and give those
             // txs a second chance.
-            hashRecentRejectsChainTip = pnetMan->getChainActive()->chainActive.Tip()->GetBlockHash();
+            hashRecentRejectsChainTip = g_chainman.chainActive.Tip()->GetBlockHash();
             recentRejects->reset();
         }
         LOCK(cs_orphans);
@@ -320,11 +318,11 @@ void static ProcessGetData(CNode *pfrom, CConnman &connman, const Consensus::Par
         if (inv.type == MSG_BLOCK || inv.type == MSG_FILTERED_BLOCK)
         {
             bool send = false;
-            CBlockIndex *pindex = pnetMan->getChainActive()->LookupBlockIndex(inv.hash);
+            CBlockIndex *pindex = g_chainman.LookupBlockIndex(inv.hash);
             if (pindex)
             {
-                RECURSIVEREADLOCK(pnetMan->getChainActive()->cs_mapBlockIndex);
-                if (pnetMan->getChainActive()->chainActive.Contains(pindex))
+                RECURSIVEREADLOCK(g_chainman.cs_mapBlockIndex);
+                if (g_chainman.chainActive.Contains(pindex))
                 {
                     send = true;
                 }
@@ -338,11 +336,11 @@ void static ProcessGetData(CNode *pfrom, CConnman &connman, const Consensus::Par
                     // we know about.
                     send =
                         pindex->IsValid(BLOCK_VALID_SCRIPTS) &&
-                        (pnetMan->getChainActive()->pindexBestHeader != nullptr) &&
-                        (pnetMan->getChainActive()->pindexBestHeader.load()->GetBlockTime() - pindex->GetBlockTime() <
+                        (g_chainman.pindexBestHeader != nullptr) &&
+                        (g_chainman.pindexBestHeader.load()->GetBlockTime() - pindex->GetBlockTime() <
                             nOneMonth) &&
-                        (GetBlockProofEquivalentTime(*pnetMan->getChainActive()->pindexBestHeader, *pindex,
-                             *pnetMan->getChainActive()->pindexBestHeader, consensusParams) < nOneMonth);
+                        (GetBlockProofEquivalentTime(*g_chainman.pindexBestHeader, *pindex,
+                             *g_chainman.pindexBestHeader, consensusParams) < nOneMonth);
                     if (!send)
                     {
                         LogPrintf("%s: ignoring request from peer=%i for old block that isn't in the main chain\n",
@@ -356,8 +354,8 @@ void static ProcessGetData(CNode *pfrom, CConnman &connman, const Consensus::Par
             // assume > 1 week = historical
             static const int nOneWeek = 7 * 24 * 60 * 60;
             if (send && connman.OutboundTargetReached(true) &&
-                (((pnetMan->getChainActive()->pindexBestHeader != nullptr) &&
-                     (pnetMan->getChainActive()->pindexBestHeader.load()->GetBlockTime() - pindex->GetBlockTime() >
+                (((g_chainman.pindexBestHeader != nullptr) &&
+                     (g_chainman.pindexBestHeader.load()->GetBlockTime() - pindex->GetBlockTime() >
                          nOneWeek)) ||
                     inv.type == MSG_FILTERED_BLOCK) &&
                 !pfrom->fWhitelisted)
@@ -429,7 +427,7 @@ void static ProcessGetData(CNode *pfrom, CConnman &connman, const Consensus::Par
                     // redundant, and we want it right after the last block
                     // so they don't wait for other stuff first.
                     std::vector<CInv> vInv;
-                    vInv.push_back(CInv(MSG_BLOCK, pnetMan->getChainActive()->chainActive.Tip()->GetBlockHash()));
+                    vInv.push_back(CInv(MSG_BLOCK, g_chainman.chainActive.Tip()->GetBlockHash()));
                     connman.PushMessage(pfrom, NetMsgType::INV, vInv);
                 }
             }
@@ -483,7 +481,7 @@ bool static ProcessMessage(CNode *pfrom,
     int64_t nTimeReceived,
     CConnman &connman)
 {
-    const CNetworkTemplate &chainparams = pnetMan->getActivePaymentNetwork();
+    const CChainParams &chainparams = Params();
     RandAddSeedPerfmon();
     LogPrint("net", "received: %s (%u bytes) peer=%d\n", SanitizeString(strCommand), vRecv.size(), pfrom->id);
     if (gArgs.IsArgSet("-dropmessagestest") && GetRand(atoi(gArgs.GetArg("-dropmessagestest", "0"))) == 0)
@@ -624,7 +622,7 @@ bool static ProcessMessage(CNode *pfrom,
         if (!pfrom->fInbound)
         {
             // Advertise our address
-            if (fListen && !pnetMan->getChainActive()->IsInitialBlockDownload())
+            if (fListen && !g_chainman.IsInitialBlockDownload())
             {
                 CAddress addr = GetLocalAddress(&pfrom->addr, pfrom->GetLocalServices());
                 FastRandomContext insecure_rand;
@@ -831,7 +829,7 @@ bool static ProcessMessage(CNode *pfrom,
                 LogPrint("net", "got inv: %s  %s peer=%d\n", inv.ToString(), fAlreadyHave ? "have" : "new", pfrom->id);
                 g_requestman->UpdateBlockAvailability(pfrom->GetId(), inv.hash);
                 if ((!fAlreadyHave && !g_requestman->IsBlockInFlight(inv.hash)) ||
-                    (!fAlreadyHave && pnetMan->getActivePaymentNetwork()->NetworkIDString() == "regtest"))
+                    (!fAlreadyHave && Params().NetworkIDString() == "regtest"))
                 {
                     // We used to request the full block here, but since
                     // headers-announcements are now the primary method of
@@ -841,10 +839,10 @@ bool static ProcessMessage(CNode *pfrom,
                     // getheaders response here. When we receive the headers, we
                     // will then ask for the blocks we need.
                     connman.PushMessage(pfrom, NetMsgType::GETHEADERS,
-                        pnetMan->getChainActive()->chainActive.GetLocator(pnetMan->getChainActive()->pindexBestHeader),
+                        g_chainman.chainActive.GetLocator(g_chainman.pindexBestHeader),
                         inv.hash);
                     LogPrint("net", "getheaders (%d) %s to peer=%d\n",
-                        pnetMan->getChainActive()->pindexBestHeader.load()->nHeight, inv.hash.ToString(), pfrom->id);
+                        g_chainman.pindexBestHeader.load()->nHeight, inv.hash.ToString(), pfrom->id);
                 }
                 // TODO : putting a skip message here or something might help with debugging later
             }
@@ -859,7 +857,7 @@ bool static ProcessMessage(CNode *pfrom,
                         "transaction (%s) inv sent in violation of protocol peer=%d\n", inv.hash.ToString(), pfrom->id);
                 }
                 else if (!fAlreadyHave && !fImporting && !fReindex &&
-                         !pnetMan->getChainActive()->IsInitialBlockDownload())
+                         !g_chainman.IsInitialBlockDownload())
                 {
                     pfrom->AskFor(inv);
                 }
@@ -901,7 +899,7 @@ bool static ProcessMessage(CNode *pfrom,
         uint256 hashStop;
         vRecv >> locator >> hashStop;
 
-        if (pnetMan->getChainActive()->IsInitialBlockDownload() && !pfrom->fWhitelisted)
+        if (g_chainman.IsInitialBlockDownload() && !pfrom->fWhitelisted)
         {
             LogPrintf("Ignoring getheaders from peer=%d because our node is in initial block download\n", pfrom->id);
             return true;
@@ -911,7 +909,7 @@ bool static ProcessMessage(CNode *pfrom,
         if (locator.IsNull())
         {
             // If locator is null, return the hashStop block
-            pindex = pnetMan->getChainActive()->LookupBlockIndex(hashStop);
+            pindex = g_chainman.LookupBlockIndex(hashStop);
             if (!pindex)
             {
                 return true;
@@ -922,10 +920,10 @@ bool static ProcessMessage(CNode *pfrom,
         {
             LOCK(cs_main);
             // Find the last block the caller has in the main chain
-            pindex = pnetMan->getChainActive()->FindForkInGlobalIndex(pnetMan->getChainActive()->chainActive, locator);
+            pindex = g_chainman.FindForkInGlobalIndex(g_chainman.chainActive, locator);
             if (pindex)
             {
-                pindex = pnetMan->getChainActive()->chainActive.Next(pindex);
+                pindex = g_chainman.chainActive.Next(pindex);
             }
             // we must use CBlocks, as CBlockHeaders won't include the 0x00 nTx
             // count at the end
@@ -933,7 +931,7 @@ bool static ProcessMessage(CNode *pfrom,
             LogPrintf("getheaders %d to %s from peer=%d\n", (pindex ? pindex->nHeight : -1),
                 hashStop.IsNull() ? "end" : hashStop.ToString(), pfrom->id);
             LOCK(cs_main);
-            for (; pindex; pindex = pnetMan->getChainActive()->chainActive.Next(pindex))
+            for (; pindex; pindex = g_chainman.chainActive.Next(pindex))
             {
                 vHeaders.push_back(pindex->GetBlockHeader());
                 if (--nLimit <= 0 || pindex->GetBlockHash() == hashStop)
@@ -954,7 +952,7 @@ bool static ProcessMessage(CNode *pfrom,
         // without the new block. By resetting the BestHeaderSent, we ensure we
         // will re-announce the new block via headers (or compact blocks again)
         // in the SendMessages logic.
-        g_requestman->SetBestHeaderSent(pfrom->GetId(), pindex ? pindex : pnetMan->getChainActive()->chainActive.Tip());
+        g_requestman->SetBestHeaderSent(pfrom->GetId(), pindex ? pindex : g_chainman.chainActive.Tip());
         connman.PushMessage(pfrom, NetMsgType::HEADERS, vHeaders);
     }
 
@@ -1209,7 +1207,7 @@ bool static ProcessMessage(CNode *pfrom,
             // check that the first header has a previous block in the blockindex.
             if (hashLastBlock.IsNull())
             {
-                if (pnetMan->getChainActive()->LookupBlockIndex(header.hashPrevBlock))
+                if (g_chainman.LookupBlockIndex(header.hashPrevBlock))
                 {
                     hashLastBlock = header.hashPrevBlock;
                 }
@@ -1330,7 +1328,7 @@ bool static ProcessMessage(CNode *pfrom,
             // from there instead.
             LogPrint("net", "more getheaders (%d) to end to peer=%d (startheight:%d)\n", pindexLast->nHeight,
                 pfrom->GetId(), pfrom->nStartingHeight);
-            connman.PushMessage(pfrom, NetMsgType::GETHEADERS, pnetMan->getChainActive()->chainActive.GetLocator(pindexLast), uint256());
+            connman.PushMessage(pfrom, NetMsgType::GETHEADERS, g_chainman.chainActive.GetLocator(pindexLast), uint256());
 
             g_requestman->SetPeerSyncStartTime(pfrom);
 
@@ -1338,7 +1336,7 @@ bool static ProcessMessage(CNode *pfrom,
             // request, from each NODE_NETWORK peer, a header that matches the last blockhash found in this recent set
             // of headers. Once the requested header is received then the block availability for this peer will get
             // updated.
-            if (pnetMan->getChainActive()->IsInitialBlockDownload())
+            if (g_chainman.IsInitialBlockDownload())
             {
                 // TODO : there is a better way to do this
                 std::vector<NodeId> nodes = g_requestman->UpdateBestKnowBlockAll(pindexLast);
@@ -1348,7 +1346,7 @@ bool static ProcessMessage(CNode *pfrom,
                     connman.PushMessageToId(node, NetMsgType::GETHEADERS, CBlockLocator(), pindexLast->GetBlockHash());
                     LogPrint("net", "Requesting header for blockavailability, peer=%d block=%s height=%d\n",
                         node, pindexLast->GetBlockHash().ToString().c_str(),
-                        pnetMan->getChainActive()->pindexBestHeader.load()->nHeight);
+                        g_chainman.pindexBestHeader.load()->nHeight);
                 }
             }
         }
@@ -1358,12 +1356,12 @@ bool static ProcessMessage(CNode *pfrom,
         // If this set of headers is valid and ends in a block with at least as
         // much work as our tip, download as much as possible.
         if (pindexLast && pindexLast->IsValid(BLOCK_VALID_TREE) &&
-            pnetMan->getChainActive()->chainActive.Tip()->nChainWork <= pindexLast->nChainWork)
+            g_chainman.chainActive.Tip()->nChainWork <= pindexLast->nChainWork)
         {
             std::vector<CBlockIndex *> vToFetch;
             CBlockIndex *pindexWalk = pindexLast;
             // Calculate all the blocks we'd need to switch to pindexLast.
-            while (pindexWalk && !pnetMan->getChainActive()->chainActive.Contains(pindexWalk))
+            while (pindexWalk && !g_chainman.chainActive.Contains(pindexWalk))
             {
                 vToFetch.push_back(pindexWalk);
                 pindexWalk = pindexWalk->pprev;
@@ -1415,7 +1413,7 @@ bool static ProcessMessage(CNode *pfrom,
         // unless we're still syncing with the network. Such an unrequested
         // block may still be processed, subject to the conditions in
         // AcceptBlock().
-        bool forceProcessing = pfrom->fWhitelisted && !pnetMan->getChainActive()->IsInitialBlockDownload();
+        bool forceProcessing = pfrom->fWhitelisted && !g_chainman.IsInitialBlockDownload();
         {
             // Also always process if we requested the block explicitly, as we
             // may need it even though it is not a candidate for a new best tip.
@@ -1787,7 +1785,7 @@ bool ProcessMessages(CNode *pfrom, CConnman &connman)
         TRY_LOCK(pfrom->csRecvGetData, locked);
         if (locked && !pfrom->vRecvGetData.empty())
         {
-            ProcessGetData(pfrom, connman, pnetMan->getActivePaymentNetwork()->GetConsensus());
+            ProcessGetData(pfrom, connman, Params().GetConsensus());
         }
     }
 
@@ -1820,7 +1818,7 @@ bool ProcessMessages(CNode *pfrom, CConnman &connman)
     msg.SetVersion(pfrom->GetRecvVersion());
 
     // Scan for message start
-    if (memcmp(std::begin(msg.hdr.pchMessageStart), std::begin(pnetMan->getActivePaymentNetwork()->MessageStart()),
+    if (memcmp(std::begin(msg.hdr.pchMessageStart), std::begin(Params().MessageStart()),
             CMessageHeader::MESSAGE_START_SIZE) != 0)
     {
         LogPrintf("PROCESSMESSAGE: INVALID MESSAGESTART %s peer=%d\n", SanitizeString(msg.hdr.GetCommand()), pfrom->id);
@@ -1830,7 +1828,7 @@ bool ProcessMessages(CNode *pfrom, CConnman &connman)
 
     // Read header
     CMessageHeader &hdr = msg.hdr;
-    if (!hdr.IsValid(pnetMan->getActivePaymentNetwork()->MessageStart()))
+    if (!hdr.IsValid(Params().MessageStart()))
     {
         LogPrintf("PROCESSMESSAGE: ERRORS IN HEADER %s peer=%d\n", SanitizeString(hdr.GetCommand()), pfrom->id);
         return fMoreWork;
@@ -1951,7 +1949,7 @@ bool SendMessages(CNode *pto, CConnman &connman)
 
     // Address refresh broadcast
     int64_t nNow = GetTimeMicros();
-    if (!pnetMan->getChainActive()->IsInitialBlockDownload() && pto->nNextLocalAddrSend < nNow)
+    if (!g_chainman.IsInitialBlockDownload() && pto->nNextLocalAddrSend < nNow)
     {
         AdvertiseLocal(pto);
         pto->nNextLocalAddrSend = PoissonNextSend(nNow, AVG_LOCAL_ADDRESS_BROADCAST_INTERVAL);
@@ -1993,9 +1991,9 @@ bool SendMessages(CNode *pto, CConnman &connman)
     }
 
     // Start block sync
-    if (pnetMan->getChainActive()->pindexBestHeader == nullptr)
+    if (g_chainman.pindexBestHeader == nullptr)
     {
-        pnetMan->getChainActive()->pindexBestHeader = pnetMan->getChainActive()->chainActive.Tip();
+        g_chainman.pindexBestHeader = g_chainman.chainActive.Tip();
     }
 
     g_requestman->StartDownload(pto);
@@ -2003,7 +2001,7 @@ bool SendMessages(CNode *pto, CConnman &connman)
     // Resend wallet transactions that haven't gotten in a block yet
     // Except during reindex, importing and IBD, when old wallet transactions
     // become unconfirmed and spams other nodes.
-    if (!fReindex && !fImporting && !pnetMan->getChainActive()->IsInitialBlockDownload())
+    if (!fReindex && !fImporting && !g_chainman.IsInitialBlockDownload())
     {
         GetMainSignals().Broadcast(nTimeBestReceived.load(), &connman);
     }
@@ -2017,7 +2015,7 @@ bool SendMessages(CNode *pto, CConnman &connman)
         // find the first header not yet known to our peer but would connect,
         // and send. If no header would connect, or if we have too many blocks,
         // or if the peer doesn't want headers, just add all to the inv queue.
-        RECURSIVEREADLOCK(pnetMan->getChainActive()->cs_mapBlockIndex);
+        RECURSIVEREADLOCK(g_chainman.cs_mapBlockIndex);
         LOCK(pto->cs_inventory);
         std::vector<CBlock> vHeaders;
         bool fRevertToInv = ((g_requestman->GetPreferHeaders(pto) && (pto->vBlockHashesToAnnounce.size() > 1)) ||
@@ -2035,12 +2033,12 @@ bool SendMessages(CNode *pto, CConnman &connman)
             // aren't on chainActive, give up.
             for (const uint256 &hash : pto->vBlockHashesToAnnounce)
             {
-                CBlockIndex *pindex = pnetMan->getChainActive()->LookupBlockIndex(hash);
+                CBlockIndex *pindex = g_chainman.LookupBlockIndex(hash);
                 if (!pindex)
                 {
                     continue;
                 }
-                if (pnetMan->getChainActive()->chainActive[pindex->nHeight] != pindex)
+                if (g_chainman.chainActive[pindex->nHeight] != pindex)
                 {
                     // Bail out if we reorged away from this block
                     fRevertToInv = true;
@@ -2098,7 +2096,7 @@ bool SendMessages(CNode *pto, CConnman &connman)
                 for (const uint256 &hashToAnnounce : pto->vBlockHashesToAnnounce)
                 {
                     CBlockIndex *pindex = nullptr;
-                    pindex = pnetMan->getChainActive()->LookupBlockIndex(hashToAnnounce);
+                    pindex = g_chainman.LookupBlockIndex(hashToAnnounce);
                     if (!pindex)
                     {
                         continue;
@@ -2107,10 +2105,10 @@ bool SendMessages(CNode *pto, CConnman &connman)
                     // Warn if we're announcing a block that is not on the main
                     // chain. This should be very rare and could be optimized out.
                     // Just log for now.
-                    if (pnetMan->getChainActive()->chainActive[pindex->nHeight] != pindex)
+                    if (g_chainman.chainActive[pindex->nHeight] != pindex)
                     {
                         LogPrint("net", "Announcing block %s not on main chain (tip=%s)\n", hashToAnnounce.ToString(),
-                            pnetMan->getChainActive()->chainActive.Tip()->GetBlockHash().ToString());
+                            g_chainman.chainActive.Tip()->GetBlockHash().ToString());
                     }
 
                     // If the peer's chain has this block, don't inv it back.
@@ -2241,7 +2239,7 @@ bool SendMessages(CNode *pto, CConnman &connman)
     // use temp variables because they are atomic
     // TODO : add some chain not in sync conditional as well
 
-    // CBlockIndex *pTip = pnetMan->getChainActive()->chainActive.Tip();
+    // CBlockIndex *pTip = g_chainman.chainActive.Tip();
     // CBlockIndex *pBestInvalid = pindexBestInvalid;
     // if (pBestInvalid && pTip && pBestInvalid->nChainWork > pTip->nChainWork)
     {

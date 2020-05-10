@@ -270,7 +270,7 @@ bool CNode::ReceiveMsgBytes(const char *pch, unsigned int nBytes, bool &complete
         if (vRecvMsg.empty() || vRecvMsg.back().complete())
         {
             vRecvMsg.push_back(
-                CNetMessage(pnetMan->getActivePaymentNetwork()->MessageStart(), SER_NETWORK, MIN_PROTO_VERSION));
+                CNetMessage(Params().MessageStart(), SER_NETWORK, MIN_PROTO_VERSION));
         }
 
         CNetMessage &msg = vRecvMsg.back();

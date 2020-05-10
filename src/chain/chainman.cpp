@@ -13,7 +13,7 @@
 #include "main.h"
 #include "net/messages.h"
 #include "net/nodestate.h"
-#include "networks/netman.h"
+#include "chain/chainparams.h"
 #include "processblock.h"
 #include "processheader.h"
 #include "txmempool.h"
@@ -87,7 +87,7 @@ static std::atomic<bool> lockIBDState{false};
 
 bool CChainManager::IsInitialBlockDownload()
 {
-    const CNetworkTemplate &chainParams = pnetMan->getActivePaymentNetwork();
+    const CChainParams &chainParams = Params();
     if (fImporting || fReindex)
         return true;
     if (fCheckpointsEnabled && chainActive.Height() < Checkpoints::GetTotalBlocksEstimate(chainParams.Checkpoints()))
@@ -120,7 +120,7 @@ CBlockIndex *CChainManager::InsertBlockIndex(uint256 hash)
     return pindexNew;
 }
 
-bool CChainManager::InitBlockIndex(const CNetworkTemplate &chainparams)
+bool CChainManager::InitBlockIndex(const CChainParams &chainparams)
 {
     LOCK(cs_main);
 
@@ -153,7 +153,7 @@ bool CChainManager::InitBlockIndex(const CNetworkTemplate &chainparams)
             }
             CBlockIndex *pindex = AddToBlockIndex(block);
             {
-                RECURSIVEWRITELOCK(pnetMan->getChainActive()->cs_mapBlockIndex);
+                RECURSIVEWRITELOCK(g_chainman.cs_mapBlockIndex);
                 // ppcoin: compute stake entropy bit for stake modifier
                 if (!pindex->SetStakeEntropyBit(block.GetStakeEntropyBit()))
                 {
@@ -332,7 +332,7 @@ bool CChainManager::LoadBlockIndexDB()
 }
 
 
-bool CChainManager::LoadExternalBlockFile(const CNetworkTemplate &chainparams, FILE *fileIn, CDiskBlockPos *dbp)
+bool CChainManager::LoadExternalBlockFile(const CChainParams &chainparams, FILE *fileIn, CDiskBlockPos *dbp)
 {
     // std::map of disk positions for blocks with unknown parent (only used for reindex)
     static std::multimap<uint256, CDiskBlockPos> mapBlocksUnknownParent;

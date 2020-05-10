@@ -14,8 +14,7 @@
 #include "util/util.h"
 #include "util/utilstrencodings.h"
 
-extern CCriticalSection cs_nTimeOffset;
-extern int64_t nTimeOffset;
+extern std::atomic<int64_t> nMedianTimeOffset;
 
 /**
  * "Never go to sea with two chronometers; take one or three."
@@ -26,8 +25,7 @@ extern int64_t nTimeOffset;
  */
 int64_t GetTimeOffset()
 {
-    LOCK(cs_nTimeOffset);
-    return nTimeOffset;
+    return nMedianTimeOffset.load();
 }
 
 int64_t GetAdjustedTime() { return GetTime() + GetTimeOffset(); }
@@ -36,7 +34,6 @@ static int64_t abs64(int64_t n) { return (n >= 0 ? n : -n); }
 
 void AddTimeData(const CNetAddr &ip, int64_t nOffsetSample)
 {
-    LOCK(cs_nTimeOffset);
     // Ignore duplicates
     static std::set<CNetAddr> setKnown;
     if (setKnown.size() == BITCOIN_TIMEDATA_MAX_SAMPLES)
@@ -74,11 +71,11 @@ void AddTimeData(const CNetAddr &ip, int64_t nOffsetSample)
         // Only let other nodes change our time by so much
         if (abs64(nMedian) < 70 * 60)
         {
-            nTimeOffset = nMedian;
+            nMedianTimeOffset = nMedian;
         }
         else
         {
-            nTimeOffset = 0;
+            nMedianTimeOffset = 0;
 
             static bool fDone;
             if (!fDone)
@@ -104,6 +101,6 @@ void AddTimeData(const CNetAddr &ip, int64_t nOffsetSample)
             LogPrint("net", "%+d  ", n);
         LogPrint("net", "|  ");
 
-        LogPrint("net", "nTimeOffset = %+d  (%+d minutes)\n", nTimeOffset, nTimeOffset / 60);
+        LogPrint("net", "nMedianTimeOffset = %+d  (%+d minutes)\n", nMedianTimeOffset, nMedianTimeOffset / 60);
     }
 }
