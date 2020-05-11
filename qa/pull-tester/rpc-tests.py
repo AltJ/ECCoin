@@ -194,6 +194,7 @@ testScripts = [ RpcTest(t) for t in [
     'receivedby',
     'reindex',
     #'sendheaders', #rpc missing
+    'sendpacket',
     'txpropagate',
     'verifydb',
     'wallet',

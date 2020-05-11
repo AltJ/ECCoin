@@ -38,6 +38,7 @@ public:
     {
         strNetworkID = "LEGACY";
         strNetworkDataDir = "";
+        fUseBetaByDefault = false;
         consensus.nMajorityEnforceBlockUpgrade = 750;
         consensus.nMajorityRejectBlockOutdated = 950;
         consensus.nMajorityWindow = 1000;
@@ -178,6 +179,7 @@ public:
     {
         strNetworkID = "TESTNET0";
         strNetworkDataDir = "testnet0";
+        fUseBetaByDefault = true;
         consensus.nMajorityEnforceBlockUpgrade = 750;
         consensus.nMajorityRejectBlockOutdated = 950;
         consensus.nMajorityWindow = 1000;
@@ -261,6 +263,7 @@ public:
     {
         strNetworkID = "REGTEST";
         strNetworkDataDir = "regtest";
+        fUseBetaByDefault = true;
         consensus.nMajorityEnforceBlockUpgrade = 750;
         consensus.nMajorityRejectBlockOutdated = 950;
         consensus.nMajorityWindow = 1000;

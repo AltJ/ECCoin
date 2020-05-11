@@ -980,7 +980,7 @@ bool AppInit2(thread_group &threadGroup)
 
     // ********************************************************* Step 3: parameter-to-internal-flags
 
-    fBeta.store(gArgs.IsArgSet("-beta"));
+    SetBeta();
 
     g_logger->fDebug = gArgs.IsArgSet("-debug");
     // Special-case: if -debug=0/-nodebug is set, turn off debugging messages

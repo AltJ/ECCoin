@@ -12,6 +12,8 @@ static const bool DEFAULT_BETA_ENABLED = false;
 
 extern std::atomic<bool> fBeta;
 
+void SetBeta();
+
 bool IsBetaEnabled();
 
 #endif

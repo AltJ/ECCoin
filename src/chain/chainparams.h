@@ -65,6 +65,7 @@ protected:
     MapCheckpoints mapCheckpoints;
     unsigned int nStakeMaxAge;
     unsigned int nStakeMinAge;
+    bool fUseBetaByDefault;
 
 public:
     CChainParams() {}
@@ -96,6 +97,7 @@ public:
     int getpch1() const { return pchMessageStart[1]; }
     int getpch2() const { return pchMessageStart[2]; }
     int getpch3() const { return pchMessageStart[3]; }
+    bool GetBetaDefault() const { return fUseBetaByDefault; }
 };
 
 const CChainParams &Params();

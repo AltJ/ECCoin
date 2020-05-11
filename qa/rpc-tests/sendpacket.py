@@ -74,7 +74,7 @@ class SendPacketTest (BitcoinTestFramework):
 
 
 if __name__ == '__main__':
-    SendPacketTest().main(bitcoinConfDict={"beta": 1})
+    SendPacketTest().main()
 
 # Create a convenient function for an interactive python debugging session
 def Test():
@@ -82,7 +82,6 @@ def Test():
     bitcoinConf = {
         "debug": ["net", "blk", "thin", "mempool", "req", "bench", "evict"],
         "blockprioritysize": 2000000,  # we don't want any transactions rejected due to insufficient fees...
-        "beta": 1
     }
 
 
