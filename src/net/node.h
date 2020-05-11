@@ -149,11 +149,10 @@ public:
     CRollingBloomFilter filterInventoryKnown;
     // Set of transaction ids we still have to announce. They are sorted by the
     // mempool before relay, so the order is not important.
-    std::set<uint256> setInventoryTxToSend;
+    std::vector<CInv> vInventoryToSend;
     // List of block ids we still have announce. There is no final sorting
     // before sending, as they are always sent immediately and in the order
     // requested.
-    std::vector<uint256> vInventoryBlockToSend;
     CCriticalSection cs_inventory;
     CCriticalSection cs_askfor;
     std::set<uint256> setAskFor;
@@ -265,17 +264,11 @@ public:
     void PushInventory(const CInv &inv)
     {
         LOCK(cs_inventory);
-        if (inv.type == MSG_TX)
+        if (inv.type == MSG_TX && filterInventoryKnown.contains(inv.hash))
         {
-            if (!filterInventoryKnown.contains(inv.hash))
-            {
-                setInventoryTxToSend.insert(inv.hash);
-            }
+            return;
         }
-        else if (inv.type == MSG_BLOCK)
-        {
-            vInventoryBlockToSend.push_back(inv.hash);
-        }
+        vInventoryToSend.push_back(inv);
     }
 
     void PushBlockHash(const uint256 &hash)

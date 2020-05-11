@@ -242,7 +242,11 @@ void PeerLogicValidation::NewPoWValidBlock(CBlockIndex *pindex, const CBlock *pb
         g_requestman->ProcessBlockAvailability(pnode->GetId());
         // If the peer has, or we announced to them the previous block already,
         // but we don't think they have this one, go ahead and announce it.
-        if (!g_requestman->PeerHasHeader(pnode->GetId(), pindex))
+
+        // TODO : peer occasionally does not relay block headers because it incorrectly
+        // thinks the peer has the header already, re-enable this at some point with better checks
+        
+        //if (!g_requestman->PeerHasHeader(pnode->GetId(), pindex))
         {
             LogPrint("net", "%s sending header-and-ids %s to peer=%d\n", "PeerLogicValidation::NewPoWValidBlock",
                 hashBlock.ToString(), pnode->id);
@@ -289,23 +293,11 @@ bool AlreadyHaveTx(const CInv &inv)
     return false;
 }
 
-void static ProcessGetData(CNode *pfrom, CConnman &connman, const Consensus::Params &consensusParams)
+void static ProcessGetData(CNode *pfrom, CConnman &connman, const Consensus::Params &consensusParams, std::deque<CInv> &vInv)
 {
-    LOCK(pfrom->csRecvGetData);
-    // TODO : we currently use getdata to get blocks from peers, we should find a better way to do this
-    bool allBlocks = true;
-    for (auto &entry : pfrom->vRecvGetData)
-    {
-        if (entry.type != MSG_BLOCK)
-        {
-            allBlocks = false;
-            break;
-        }
-    }
-    std::deque<CInv>::iterator it = pfrom->vRecvGetData.begin();
     std::vector<CInv> vNotFound;
 
-    while (it != pfrom->vRecvGetData.end())
+    while (!vInv.empty())
     {
         // Don't bother if send buffer is too full to respond anyway.
         if (pfrom->fPauseSend)
@@ -313,8 +305,8 @@ void static ProcessGetData(CNode *pfrom, CConnman &connman, const Consensus::Par
             break;
         }
 
-        const CInv &inv = *it;
-        it++;
+        const CInv &inv = vInv.front();
+        vInv.pop_front();
         if (inv.type == MSG_BLOCK || inv.type == MSG_FILTERED_BLOCK)
         {
             bool send = false;
@@ -372,63 +364,54 @@ void static ProcessGetData(CNode *pfrom, CConnman &connman, const Consensus::Par
             {
                 // Send block from disk
                 CBlock block;
+                if (!ReadBlockFromDisk(block, pindex, consensusParams))
                 {
-                    if (!ReadBlockFromDisk(block, pindex, consensusParams))
+                    LogPrint("net", "cannot load block from disk, no response");
+                }
+                else
+                {
+                    if (inv.type == MSG_BLOCK)
                     {
-                        LogPrint("net", "cannot load block from disk, no response");
-                        return;
+                        connman.PushMessage(pfrom, NetMsgType::BLOCK, block);
                     }
-                }
-                if (inv.type == MSG_BLOCK)
-                {
-                    connman.PushMessage(pfrom, NetMsgType::BLOCK, block);
-                }
-                else if (inv.type == MSG_FILTERED_BLOCK)
-                {
-                    bool sendMerkleBlock = false;
-                    CMerkleBlock merkleBlock;
+                    else if (inv.type == MSG_FILTERED_BLOCK)
                     {
                         LOCK(pfrom->cs_filter);
                         if (pfrom->pfilter)
                         {
-                            sendMerkleBlock = true;
-                            merkleBlock = CMerkleBlock(block, *pfrom->pfilter);
+                            CMerkleBlock merkleBlock(block, *pfrom->pfilter);
+                            connman.PushMessage(pfrom, NetMsgType::MERKLEBLOCK, merkleBlock);
+                            // CMerkleBlock just contains hashes, so also push
+                            // any transactions in the block the client did not
+                            // see. This avoids hurting performance by
+                            // pointlessly requiring a round-trip. Note that
+                            // there is currently no way for a node to request
+                            // any single transactions we didn't send here -
+                            // they must either disconnect and retry or request
+                            // the full block. Thus, the protocol spec specified
+                            // allows for us to provide duplicate txn here,
+                            // however we MUST always provide at least what the
+                            // remote peer needs.
+                            typedef std::pair<unsigned int, uint256> PairType;
+                            for (PairType &pair : merkleBlock.vMatchedTxn)
+                            {
+                                connman.PushMessage(pfrom, NetMsgType::TX, block.vtx[pair.first]);
+                            }
                         }
+                        // else
+                        // no response
                     }
-                    if (sendMerkleBlock)
+                    // Trigger the peer node to send a getblocks request for the
+                    // next batch of inventory.
+                    if (inv.hash == uint256())
                     {
-                        connman.PushMessage(pfrom, NetMsgType::MERKLEBLOCK, merkleBlock);
-                        // CMerkleBlock just contains hashes, so also push
-                        // any transactions in the block the client did not
-                        // see. This avoids hurting performance by
-                        // pointlessly requiring a round-trip. Note that
-                        // there is currently no way for a node to request
-                        // any single transactions we didn't send here -
-                        // they must either disconnect and retry or request
-                        // the full block. Thus, the protocol spec specified
-                        // allows for us to provide duplicate txn here,
-                        // however we MUST always provide at least what the
-                        // remote peer needs.
-                        typedef std::pair<unsigned int, uint256> PairType;
-                        for (PairType &pair : merkleBlock.vMatchedTxn)
-                        {
-                            connman.PushMessage(pfrom, NetMsgType::TX, block.vtx[pair.first]);
-                        }
+                        // Bypass PushInventory, this must send even if
+                        // redundant, and we want it right after the last block
+                        // so they don't wait for other stuff first.
+                        std::vector<CInv> vOneInv;
+                        vInv.push_back(CInv(MSG_BLOCK, g_chainman.chainActive.Tip()->GetBlockHash()));
+                        connman.PushMessage(pfrom, NetMsgType::INV, vOneInv);
                     }
-                    // else
-                    // no response
-                }
-
-                // Trigger the peer node to send a getblocks request for the
-                // next batch of inventory.
-                if (inv.hash == uint256())
-                {
-                    // Bypass PushInventory, this must send even if
-                    // redundant, and we want it right after the last block
-                    // so they don't wait for other stuff first.
-                    std::vector<CInv> vInv;
-                    vInv.push_back(CInv(MSG_BLOCK, g_chainman.chainActive.Tip()->GetBlockHash()));
-                    connman.PushMessage(pfrom, NetMsgType::INV, vInv);
                 }
             }
         }
@@ -441,13 +424,7 @@ void static ProcessGetData(CNode *pfrom, CConnman &connman, const Consensus::Par
         }
         // Track requests for our stuff.
         GetMainSignals().Inventory(inv.hash);
-        if ((inv.type == MSG_BLOCK || inv.type == MSG_FILTERED_BLOCK) && (allBlocks == false))
-        {
-            break;
-        }
     }
-    pfrom->vRecvGetData.erase(pfrom->vRecvGetData.begin(), it);
-
     if (!vNotFound.empty())
     {
         // Let the peer know that we didn't find what it asked for, so it
@@ -878,18 +855,30 @@ bool static ProcessMessage(CNode *pfrom,
             return error("message getdata size() = %u", vInv.size());
         }
 
-        // TODO : check that the invs are valid (valid type and hash)
+        // Validate that INVs are a valid type
+        std::deque<CInv> invDeque;
+        for (unsigned int nInv = 0; nInv < vInv.size(); nInv++)
+        {
+            const CInv &inv = vInv[nInv];
+            if (!((inv.type == MSG_TX) || (inv.type == MSG_BLOCK) || (inv.type == MSG_FILTERED_BLOCK)))
+            {
+                g_dosman->Misbehaving(pfrom, 20, "invalid inventory");
+                return error("message inv invalid type = %u", inv.type);
+            }
+            invDeque.push_back(inv);
+        }
 
-        LogPrintf("received getdata (%u invsz) peer=%d\n", vInv.size(), pfrom->id);
+        LogPrint("net", "received getdata (%u invsz) peer=%d\n", vInv.size(), pfrom->id);
 
         if (vInv.size() > 0)
         {
-            LogPrintf("received getdata for: %s peer=%d\n", vInv[0].ToString(), pfrom->id);
+            LogPrint("net", "received getdata for: %s peer=%d\n", vInv[0].ToString(), pfrom->id);
         }
+        ProcessGetData(pfrom, connman, chainparams.GetConsensus(), invDeque);
+        if (vInv.empty() == false)
         {
             LOCK(pfrom->csRecvGetData);
-            pfrom->vRecvGetData.insert(pfrom->vRecvGetData.end(), vInv.begin(), vInv.end());
-            ProcessGetData(pfrom, connman, chainparams.GetConsensus());
+            pfrom->vRecvGetData.insert(pfrom->vRecvGetData.end(), invDeque.begin(), invDeque.end());
         }
     }
 
@@ -1092,7 +1081,6 @@ bool static ProcessMessage(CNode *pfrom,
                 for (const CTxIn &txin : tx.vin)
                 {
                     CInv _inv(MSG_TX, txin.prevout.hash);
-                    pfrom->AddInventoryKnown(_inv);
                     if (!AlreadyHaveTx(_inv))
                     {
                         pfrom->AskFor(_inv);
@@ -1385,8 +1373,7 @@ bool static ProcessMessage(CNode *pfrom,
                 // ask for more than the maximum allowed per peer because the request manager will take care
                 // of any duplicate requests.
 
-                // TODO : find a better value for this than 64 and make it a variable
-                if (nAskFor >= 64)
+                if (nAskFor >= MAX_BLOCKS_IN_TRANSIT_PER_PEER)
                 {
                     LogPrint("net", "Large reorg, could only fetch %d blocks\n", nAskFor);
                     break;
@@ -1785,7 +1772,7 @@ bool ProcessMessages(CNode *pfrom, CConnman &connman)
         TRY_LOCK(pfrom->csRecvGetData, locked);
         if (locked && !pfrom->vRecvGetData.empty())
         {
-            ProcessGetData(pfrom, connman, Params().GetConsensus());
+            ProcessGetData(pfrom, connman, Params().GetConsensus(), pfrom->vRecvGetData);
         }
     }
 
@@ -2143,73 +2130,45 @@ bool SendMessages(CNode *pto, CConnman &connman)
     // Message: inventory
     //
     std::vector<CInv> vInv;
+    std::vector<CInv> vInvToSend;
     {
         LOCK(pto->cs_inventory);
-        vInv.reserve(std::max<size_t>(pto->vInventoryBlockToSend.size(), INVENTORY_BROADCAST_MAX));
-
-        // Add blocks
-        for (const uint256 &hash : pto->vInventoryBlockToSend)
+        if (pto->vInventoryToSend.empty() == false)
         {
-            vInv.push_back(CInv(MSG_BLOCK, hash));
-            if (vInv.size() == MAX_INV_SZ)
-            {
-                connman.PushMessage(pto, NetMsgType::INV, vInv);
-                vInv.clear();
-            }
+            std::swap(vInvToSend, pto->vInventoryToSend);
         }
-        pto->vInventoryBlockToSend.clear();
-
-        // Time to send but the peer has requested we not relay transactions.
+    }
+    {
+        // No reason to drain out at many times the network's capacity,
+        // especially since we have many peers and some will draw much
+        // shorter delays.
+        unsigned int nRelayedTransactions = 0;
+        LOCK(pto->cs_inventory);
+        for (auto& entry : vInvToSend)
         {
-            LOCK(pto->cs_filter);
-            if (!pto->fRelayTxes)
+            if (nRelayedTransactions < INVENTORY_BROADCAST_MAX)
             {
-                pto->setInventoryTxToSend.clear();
-            }
-        }
-
-        // Determine transactions to relay
-        {
-            // Produce a vector with all candidates for sending
-            std::vector<std::set<uint256>::iterator> vInvTx;
-            vInvTx.reserve(pto->setInventoryTxToSend.size());
-            for (std::set<uint256>::iterator it = pto->setInventoryTxToSend.begin();
-                 it != pto->setInventoryTxToSend.end(); it++)
-            {
-                vInvTx.push_back(it);
-            }
-            // No reason to drain out at many times the network's capacity,
-            // especially since we have many peers and some will draw much
-            // shorter delays.
-            unsigned int nRelayedTransactions = 0;
-            LOCK(pto->cs_filter);
-            while (!vInvTx.empty() && nRelayedTransactions < INVENTORY_BROADCAST_MAX)
-            {
-                std::set<uint256>::iterator it = vInvTx.back();
-                vInvTx.pop_back();
-                uint256 hash = *it;
-                // Remove it from the to-be-sent set
-                pto->setInventoryTxToSend.erase(it);
                 // Check if not in the filter already
-                if (pto->filterInventoryKnown.contains(hash))
+                if (pto->filterInventoryKnown.contains(entry.hash))
                 {
                     continue;
                 }
                 // Send
-                vInv.push_back(CInv(MSG_TX, hash));
+                vInv.push_back(entry);
                 nRelayedTransactions++;
                 if (vInv.size() == MAX_INV_SZ)
                 {
                     connman.PushMessage(pto, NetMsgType::INV, vInv);
                     vInv.clear();
                 }
-                pto->filterInventoryKnown.insert(hash);
+                pto->filterInventoryKnown.insert(entry.hash);
             }
         }
     }
     if (!vInv.empty())
     {
         connman.PushMessage(pto, NetMsgType::INV, vInv);
+        vInv.clear();
     }
 
     // ask for things we need
@@ -2234,7 +2193,10 @@ bool SendMessages(CNode *pto, CConnman &connman)
             mapAlreadyAskedFor.erase(entry.hash);
         }
     }
-    connman.PushMessage(pto, NetMsgType::GETDATA, requests);
+    if (requests.empty() == false)
+    {
+        connman.PushMessage(pto, NetMsgType::GETDATA, requests);
+    }
 
     // use temp variables because they are atomic
     // TODO : add some chain not in sync conditional as well

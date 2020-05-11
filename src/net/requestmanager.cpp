@@ -39,11 +39,6 @@ CBlockIndex *LastCommonAncestor(CBlockIndex *pa, CBlockIndex *pb)
     return pa;
 }
 
-bool CRequestManager::AlreadyAskedForBlock(const uint256 &hash)
-{
-    return (mapBlocksInFlight.count(hash) > 0);
-}
-
 CNodeState *CRequestManager::_GetNodeState(const NodeId id)
 {
     std::map<NodeId, CNodeState>::iterator it = mapNodeState.find(id);
@@ -165,7 +160,7 @@ void CRequestManager::MarkBlockAsInFlight(NodeId nodeid, const uint256 &hash, co
 {
     // Make sure it's not listed somewhere already.
     MarkBlockAsReceived(hash);
-    QueuedBlock newentry = {hash, pindex, pindex != nullptr};
+    QueuedBlock newentry = {hash, GetTime(), pindex, pindex != nullptr};
     WRITELOCK(cs_requestmanager);
     mapBlocksInFlight[hash] = std::make_pair(nodeid, newentry);
     if (mapNumBlocksInFlight.count(nodeid) != 0)
@@ -388,25 +383,22 @@ std::vector<NodeId> CRequestManager::UpdateBestKnowBlockAll(CBlockIndex* pindexL
 void CRequestManager::RequestNextBlocksToDownload(CNode* node)
 {
 
-    int nBlocksInFlight = 0;
+    int16_t nBlocksInFlight = 0;
     {
         READLOCK(cs_requestmanager);
         std::map<NodeId, int16_t>::iterator iter = mapNumBlocksInFlight.find(node->GetId());
         assert(iter != mapNumBlocksInFlight.end());
         nBlocksInFlight = iter->second;
     }
-    // TODO : chose a better number than 64 and make it a variable
-    if (!node->fDisconnect && !node->fClient && nBlocksInFlight < 64)
+    if (!node->fDisconnect && !node->fClient && nBlocksInFlight < MAX_BLOCKS_IN_TRANSIT_PER_PEER)
     {
         std::vector<CBlockIndex *> vToDownload;
-        // TODO : find a better number than 64 and make it a variable
-        FindNextBlocksToDownload(node, 64 - nBlocksInFlight, vToDownload);
+        FindNextBlocksToDownload(node, MAX_BLOCKS_IN_TRANSIT_PER_PEER - nBlocksInFlight, vToDownload);
         LogPrint("net", "vToDownload size = %u for peer %d \n", vToDownload.size(), node->GetId());
         std::vector<CInv> vGetBlocks;
         for (CBlockIndex *pindex : vToDownload)
         {
             CInv inv(MSG_BLOCK, pindex->GetBlockHash());
-            // TODO : split alreadyhave into alreadyhaveBLOCK and alreadyhaveTX
             if (!AlreadyHaveBlock(inv))
             {
                 vGetBlocks.emplace_back(inv);
@@ -426,9 +418,13 @@ void CRequestManager::RequestNextBlocksToDownload(CNode* node)
                     std::map<uint256, std::pair<NodeId, QueuedBlock> >::iterator itInFlight = mapBlocksInFlight.find(inv.hash);
                     if (itInFlight != mapBlocksInFlight.end())
                     {
-                        // block already incoming, move on
-                        LogPrint("net", "block %s already in flight, continue \n", inv.hash.ToString().c_str());
-                        continue;
+                        // timeout incoming block requests after 20 seconds and rerequest
+                        if (itInFlight->second.second.nDownloadStartTime >= GetTime() - 20)
+                        {
+                            // block already incoming, move on
+                            LogPrint("net", "block %s already in flight, continue \n", inv.hash.ToString().c_str());
+                            continue;
+                        }
                     }
                     vToFetchNew.push_back(inv);
                 }
@@ -535,12 +531,17 @@ void CRequestManager::FindNextBlocksToDownload(CNode *node, unsigned int count, 
         for (CBlockIndex *pindex : vToFetch)
         {
             uint256 blockHash = pindex->GetBlockHash();
-            if (AlreadyAskedForBlock(blockHash))
+            std::map<uint256, std::pair<NodeId, QueuedBlock> >::iterator itInFlight = mapBlocksInFlight.find(blockHash);
+            if (itInFlight != mapBlocksInFlight.end())
             {
-                // we already requested this block.
-                // TODO : consider also requesting this block from a second peer that has it
-                LogPrint("net", "we already requesdted block with hash %s, continue \n", blockHash.ToString().c_str());
-                continue;
+                // timeout incoming block requests after 20 seconds and rerequest
+                if (itInFlight->second.second.nDownloadStartTime >= GetTime() - 20)
+                {
+                    // we already requested this block.
+                    // TODO : consider also requesting this block from a second peer that has it
+                    LogPrint("net", "we already requesdted block with hash %s, continue \n", blockHash.ToString().c_str());
+                    continue;
+                }
             }
             if (!pindex->IsValid(BLOCK_VALID_TREE))
             {

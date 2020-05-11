@@ -24,6 +24,7 @@ struct CNodeStateStats
 struct QueuedBlock
 {
     uint256 hash;
+    int64_t nDownloadStartTime; // the time we requested the block at
     const CBlockIndex *pindex; //!< Optional.
     bool fValidatedHeaders; //!< Whether this block has validated headers at the time of request.
 };
@@ -45,8 +46,6 @@ protected:
     void _ProcessBlockAvailability(NodeId nodeid);
 
 public:
-    bool AlreadyAskedForBlock(const uint256 &hash);
-
     CNodeState *_GetNodeState(const NodeId id);
 
     /** Add a nodestate from the map */

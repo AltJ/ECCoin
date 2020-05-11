@@ -3307,6 +3307,10 @@ bool CWallet::CreateCoinStake(const CKeyStore &keystore,
         }
 
         static int nMaxStakeSearchInterval = 60;
+        if (Params().MineBlocksOnDemand())
+        {
+            nMaxStakeSearchInterval = 1;
+        }
 
         // LogPrintf(">> block.GetBlockTime() = %"PRI64d", nStakeMinAge = %d, txNew.nTime = %d\n", block.GetBlockTime(),
         // nStakeMinAge,txNew.nTime);

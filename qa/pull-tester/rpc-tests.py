@@ -197,7 +197,7 @@ testScripts = [ RpcTest(t) for t in [
     'txpropagate',
     'verifydb',
     'wallet',
-    Disabled('walletbackup', "issue with syncing mempools"),
+    'walletbackup',
     #'wallet-dump',
     'zapwallettxes',
     #'rawtransactions', ???
