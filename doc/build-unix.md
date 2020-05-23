@@ -93,11 +93,31 @@ libqrencode (optional) can be installed with:
 
     sudo dnf install qrencode-devel
 
+Building with depends
+---------------------
+
+As an alternative to installing pre-built dev libraries, these can be built via the `depends` folder. This is necessary for example when building on Ubuntu 20.04 for which the legacy version of BerkleyDB is no longer available via `apt-get`.
+
+    cd depends
+    make HOST=x86_64-unknown-linux-gnu
+    cd ..
+    ./autogen.sh
+    CONFIG_SITE=$PWD/depends/x86_64-unknown-linux-gnu/share/config.site 
+    ./configure --prefix=$PWD/depends/x86_64-unknown-linux-gnu
+    make -jn
+
+where n=the number of cores available for build acceleration.
+
 Building
 --------
-To build eccoind once the proper dependencies are installed run 
-	make -f makefile.unix
-inside the src folder
+To build eccoind once the proper dependencies are installed run the following
+inside the src folder:
+
+    ./autogen.sh
+    ./configure
+    make -jn
+
+where n=the number of cores available for build acceleration.
 
 
 
