@@ -196,7 +196,6 @@ testScripts = [ RpcTest(t) for t in [
     #'sendheaders', #rpc missing
     'sendpacket',
     'txpropagate',
-    'verifydb',
     'wallet',
     'walletbackup',
     #'wallet-dump',
@@ -249,6 +248,7 @@ testScriptsExt = [ RpcTest(t) for t in [
     'p2p-acceptblock',
     'mempool_packages',
     'maxuploadtarget',
+    'verifydb',
 ] ]
 
 #Enable ZMQ tests

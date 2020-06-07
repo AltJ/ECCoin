@@ -117,7 +117,7 @@ void CNode::AskFor(const CInv &inv)
     // We're using mapAskFor as a priority queue, the key is the earliest time
     // the request can be sent.
     int64_t nRequestTime;
-    limitedmap<uint256, int64_t>::const_iterator it = mapAlreadyAskedFor.find(inv.hash);
+    std::map<uint256, int64_t>::iterator it = mapAlreadyAskedFor.find(inv.hash);
     if (it != mapAlreadyAskedFor.end())
     {
         nRequestTime = it->second;
@@ -140,7 +140,7 @@ void CNode::AskFor(const CInv &inv)
     nRequestTime = std::max(nRequestTime + 2 * 60 * 1000000, nNow);
     if (it != mapAlreadyAskedFor.end())
     {
-        mapAlreadyAskedFor.update(it, nRequestTime);
+        it->second = nRequestTime;
     }
     else
     {

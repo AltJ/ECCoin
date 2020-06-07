@@ -49,8 +49,6 @@ CNodeState *CRequestManager::_GetNodeState(const NodeId id)
     return &it->second;
 }
 
-
-// TODO : Should remove entrys for pnode from these maps when it is deleted
 void CRequestManager::InitializeNodeState(const CNode *pnode)
 {
     WRITELOCK(cs_requestmanager);
@@ -63,6 +61,18 @@ void CRequestManager::RemoveNodeState(const NodeId id)
 {
     WRITELOCK(cs_requestmanager);
     mapNodeState.erase(id);
+    mapNumBlocksInFlight.erase(id);
+    for (auto iter = mapBlocksInFlight.begin(); iter != mapBlocksInFlight.end();)
+    {
+        if (iter->second.first == id)
+        {
+            iter = mapBlocksInFlight.erase(iter);
+        }
+        else
+        {
+            ++iter;
+        }
+    }
 }
 
 /** Check whether the last unknown block a peer advertized is not yet known. */
@@ -72,7 +82,10 @@ void CRequestManager::_ProcessBlockAvailability(NodeId nodeid)
     AssertWriteLockHeld(cs_requestmanager);
 
     std::map<NodeId, CNodeState>::iterator iter = mapNodeState.find(nodeid);
-    assert(iter != mapNodeState.end());
+    if(iter == mapNodeState.end())
+    {
+        return;
+    }
     CNodeState* state = &iter->second;
 
     if (!state->hashLastUnknownBlock.IsNull())
@@ -96,7 +109,10 @@ void CRequestManager::ProcessBlockAvailability(NodeId nodeid)
     WRITELOCK(cs_requestmanager);
 
     std::map<NodeId, CNodeState>::iterator iter = mapNodeState.find(nodeid);
-    assert(iter != mapNodeState.end());
+    if(iter == mapNodeState.end())
+    {
+        return;
+    }
     CNodeState* state = &iter->second;
 
     if (!state->hashLastUnknownBlock.IsNull())
@@ -120,7 +136,10 @@ void CRequestManager::UpdateBlockAvailability(NodeId nodeid, const uint256 &hash
     ProcessBlockAvailability(nodeid);
     WRITELOCK(cs_requestmanager);
     std::map<NodeId, CNodeState>::iterator iter = mapNodeState.find(nodeid);
-    assert(iter != mapNodeState.end());
+    if(iter == mapNodeState.end())
+    {
+        return;
+    }
     CNodeState* state = &iter->second;
     if (pindex && pindex->nChainWork > 0)
     {
@@ -143,7 +162,10 @@ bool CRequestManager::PeerHasHeader(const NodeId nodeid, const CBlockIndex *pind
 {
     READLOCK(cs_requestmanager);
     std::map<NodeId, CNodeState>::iterator iter = mapNodeState.find(nodeid);
-    assert(iter != mapNodeState.end());
+    if(iter == mapNodeState.end())
+    {
+        return false;
+    }
     CNodeState* state = &iter->second;
     if (state->pindexBestKnownBlock && pindex == state->pindexBestKnownBlock->GetAncestor(pindex->nHeight))
     {
@@ -173,7 +195,10 @@ void CRequestManager::UpdatePreferredDownload(CNode *node)
 {
     WRITELOCK(cs_requestmanager);
     std::map<NodeId, CNodeState>::iterator iter = mapNodeState.find(node->GetId());
-    assert(iter != mapNodeState.end());
+    if(iter == mapNodeState.end())
+    {
+        return;
+    }
     CNodeState* state = &iter->second;
 
     nPreferredDownload.fetch_sub(state->fPreferredDownload);
@@ -194,7 +219,10 @@ bool CRequestManager::MarkBlockAsReceived(const uint256 &hash)
     std::map<uint256, std::pair<NodeId, QueuedBlock> >::iterator itInFlight = mapBlocksInFlight.find(hash);
     if (itInFlight != mapBlocksInFlight.end())
     {
-        mapNumBlocksInFlight[itInFlight->second.first] -= 1;
+        if (mapNumBlocksInFlight.count(itInFlight->second.first) != 0)
+        {
+            mapNumBlocksInFlight[itInFlight->second.first] -= 1;
+        }
         mapBlocksInFlight.erase(itInFlight);
         return true;
     }
@@ -205,7 +233,10 @@ void CRequestManager::SetBestHeaderSent(NodeId nodeid, CBlockIndex* pindex)
 {
     WRITELOCK(cs_requestmanager);
     std::map<NodeId, CNodeState>::iterator iter = mapNodeState.find(nodeid);
-    assert(iter != mapNodeState.end());
+    if(iter == mapNodeState.end())
+    {
+        return;
+    }
     iter->second.pindexBestHeaderSent = pindex;
 }
 
@@ -213,7 +244,7 @@ bool CRequestManager::GetNodeStateStats(NodeId nodeid, CNodeStateStats &stats)
 {
     READLOCK(cs_requestmanager);
     std::map<NodeId, CNodeState>::iterator iter = mapNodeState.find(nodeid);
-    if(iter != mapNodeState.end())
+    if(iter == mapNodeState.end())
     {
         return false;
     }
@@ -238,7 +269,10 @@ bool CRequestManager::GetPreferHeaders(CNode *node)
 {
     READLOCK(cs_requestmanager);
     std::map<NodeId, CNodeState>::iterator iter = mapNodeState.find(node->GetId());
-    assert(iter != mapNodeState.end());
+    if(iter == mapNodeState.end())
+    {
+        return false;
+    }
     return iter->second.fPreferHeaders;
 }
 
@@ -246,7 +280,10 @@ void CRequestManager::SetPreferHeaders(CNode *node)
 {
     WRITELOCK(cs_requestmanager);
     std::map<NodeId, CNodeState>::iterator iter = mapNodeState.find(node->GetId());
-    assert(iter != mapNodeState.end());
+    if(iter == mapNodeState.end())
+    {
+        return;
+    }
     iter->second.fPreferHeaders = true;
 }
 
@@ -254,7 +291,10 @@ int CRequestManager::GetBlocksInFlight(NodeId nodeid)
 {
     READLOCK(cs_requestmanager);
     std::map<NodeId, int16_t>::iterator iter = mapNumBlocksInFlight.find(nodeid);
-    assert(iter != mapNumBlocksInFlight.end());
+    if(iter == mapNumBlocksInFlight.end())
+    {
+        return 0;
+    }
     return iter->second;
 }
 
@@ -262,7 +302,10 @@ void CRequestManager::StartDownload(CNode* node)
 {
     WRITELOCK(cs_requestmanager);
     std::map<NodeId, CNodeState>::iterator iter = mapNodeState.find(node->GetId());
-    assert(iter != mapNodeState.end());
+    if(iter == mapNodeState.end())
+    {
+        return;
+    }
     CNodeState* state = &iter->second;
 
     // Download if this is a nice peer, or we have no nice peers and this one
@@ -337,7 +380,10 @@ void CRequestManager::SetPeerFirstHeaderReceived(CNode* node, CBlockIndex* pinde
 {
     WRITELOCK(cs_requestmanager);
     std::map<NodeId, CNodeState>::iterator iter = mapNodeState.find(node->GetId());
-    assert(iter != mapNodeState.end());
+    if(iter == mapNodeState.end())
+    {
+        return;
+    }
     CNodeState* state = &iter->second;
     // During the initial peer handshake we must receive the initial headers which should be greater
     // than or equal to our block height at the time of requesting GETHEADERS. This is because the peer has
@@ -361,7 +407,10 @@ void CRequestManager::SetPeerSyncStartTime(CNode* node)
     int64_t now = GetTime();
     WRITELOCK(cs_requestmanager);
     std::map<NodeId, CNodeState>::iterator iter = mapNodeState.find(node->GetId());
-    assert(iter != mapNodeState.end());
+    if(iter == mapNodeState.end())
+    {
+        return;
+    }
     CNodeState* state = &iter->second;
     state->nSyncStartTime = now; // reset the time because more headers needed
 }
@@ -387,7 +436,10 @@ void CRequestManager::RequestNextBlocksToDownload(CNode* node)
     {
         READLOCK(cs_requestmanager);
         std::map<NodeId, int16_t>::iterator iter = mapNumBlocksInFlight.find(node->GetId());
-        assert(iter != mapNumBlocksInFlight.end());
+        if(iter == mapNumBlocksInFlight.end())
+        {
+            return;
+        }
         nBlocksInFlight = iter->second;
     }
     if (!node->fDisconnect && !node->fClient && nBlocksInFlight < MAX_BLOCKS_IN_TRANSIT_PER_PEER)
@@ -466,7 +518,10 @@ void CRequestManager::FindNextBlocksToDownload(CNode *node, unsigned int count, 
     RECURSIVEREADLOCK(g_chainman.cs_mapBlockIndex);
     WRITELOCK(cs_requestmanager);
     std::map<NodeId, CNodeState>::iterator iter = mapNodeState.find(node->GetId());
-    assert(iter != mapNodeState.end());
+    if(iter == mapNodeState.end())
+    {
+        return;
+    }
     CNodeState* state = &iter->second;
 
     if (state->pindexBestKnownBlock == nullptr ||

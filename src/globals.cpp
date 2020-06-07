@@ -86,3 +86,5 @@ CPacketManager g_packetman;
 
 CChainParams chainparams;
 CChainManager g_chainman;
+
+std::atomic<CBlockIndex*> pindexBestInvalid{nullptr};

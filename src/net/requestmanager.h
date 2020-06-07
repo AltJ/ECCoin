@@ -54,20 +54,6 @@ public:
     /** Delete a nodestate from the map */
     void RemoveNodeState(const NodeId id);
 
-    /** Clear the entire nodestate map */
-    void Clear()
-    {
-        WRITELOCK(cs_requestmanager);
-        mapNodeState.clear();
-    }
-
-    /** Is mapNodestate empty */
-    bool Empty()
-    {
-        WRITELOCK(cs_requestmanager);
-        return mapNodeState.empty();
-    }
-
     void ProcessBlockAvailability(NodeId nodeid);
 
     /** Update tracking information about which blocks a peer is assumed to have. */

@@ -22,7 +22,6 @@
 #include "compat.h"
 #include "connman.h"
 #include "crypto/hash.h"
-#include "limitedmap.h"
 #include "net/addrman.h"
 #include "net/connman.h"
 #include "net/netbase.h"
@@ -119,7 +118,7 @@ extern bool fListen;
 extern bool fRelayTxes;
 
 extern CCriticalSection cs_alreadyaskfor;
-extern limitedmap<uint256, int64_t> mapAlreadyAskedFor;
+extern std::map<uint256, int64_t> mapAlreadyAskedFor;
 
 struct LocalServiceInfo
 {

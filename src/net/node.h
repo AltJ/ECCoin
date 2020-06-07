@@ -9,7 +9,6 @@
 #define ECCOIN_NODE_H
 
 #include "bloom.h"
-#include "limitedmap.h"
 #include "netmessage.h"
 #include "pubkey.h"
 #include "random.h"

@@ -174,7 +174,7 @@ struct CBlockIndexWorkComparator
     }
 };
 
-extern CBlockIndex *pindexBestInvalid;
+extern std::atomic<CBlockIndex*> pindexBestInvalid;
 extern std::multimap<CBlockIndex *, CBlockIndex *> mapBlocksUnlinked;
 extern std::map<uint256, COrphanTx> mapOrphanTransactions GUARDED_BY(cs_orphans);
 ;

@@ -95,7 +95,6 @@ BITCOIN_CORE_H = \
   key.h \
   keypoolentry.h \
   keystore.h \
-  limitedmap.h \
   main.h \
   memusage.h \
   merkleblock.h \

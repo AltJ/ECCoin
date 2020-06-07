@@ -1870,8 +1870,7 @@ void CConnman::DeleteNode(CNode *pnode)
 {
     assert(pnode);
     bool fUpdateConnectionTime = false;
-    // TODO : clean up requestman requests here for the node being deleted
-    //FinalizeNode(pnode, fUpdateConnectionTime);
+    g_requestman->RemoveNodeState(pnode->GetId());
     if (fUpdateConnectionTime)
     {
         addrman.Connected(pnode->addr);

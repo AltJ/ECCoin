@@ -255,7 +255,7 @@ bool CChainManager::LoadBlockIndexDB()
             setBlockIndexCandidates.insert(pindex);
         }
         if (pindex->nStatus & BLOCK_FAILED_MASK &&
-            (!pindexBestInvalid || pindex->nChainWork > pindexBestInvalid->nChainWork))
+            (!pindexBestInvalid || pindex->nChainWork > pindexBestInvalid.load()->nChainWork))
         {
             pindexBestInvalid = pindex;
         }

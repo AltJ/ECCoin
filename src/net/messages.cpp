@@ -78,8 +78,7 @@ extern CCriticalSection cs_mapInboundConnectionTracker;
 extern std::map<CNetAddr, ConnectionHistory> mapInboundConnectionTracker;
 extern std::map<uint256, std::pair<CBlockHeader, int64_t> > mapUnConnectedHeaders;
 
-// TODO : make pindexBestInvalid atomic
-extern CBlockIndex *pindexBestInvalid;
+extern std::atomic<CBlockIndex*> pindexBestInvalid;
 
 void RelayTransaction(const CTransaction &tx, CConnman &connman)
 {
@@ -224,16 +223,10 @@ PeerLogicValidation::PeerLogicValidation(CConnman *connmanIn) : connman(connmanI
 
 void PeerLogicValidation::NewPoWValidBlock(CBlockIndex *pindex, const CBlock *pblock)
 {
-    LOCK(cs_main);
-    static int nHighestFastAnnounce = 0;
-    if (pindex->nHeight <= nHighestFastAnnounce)
-    {
-        return;
-    }
-    nHighestFastAnnounce = pindex->nHeight;
     uint256 hashBlock(pblock->GetHash());
     RECURSIVEREADLOCK(g_chainman.cs_mapBlockIndex);
-    connman->ForEachNode([this, pindex, &hashBlock](CNode *pnode) {
+    connman->ForEachNode([this, pindex, &hashBlock](CNode *pnode)
+    {
         // TODO: Avoid the repeated-serialization here
         if (pnode->fDisconnect)
         {
@@ -245,7 +238,7 @@ void PeerLogicValidation::NewPoWValidBlock(CBlockIndex *pindex, const CBlock *pb
 
         // TODO : peer occasionally does not relay block headers because it incorrectly
         // thinks the peer has the header already, re-enable this at some point with better checks
-        
+
         //if (!g_requestman->PeerHasHeader(pnode->GetId(), pindex))
         {
             LogPrint("net", "%s sending header-and-ids %s to peer=%d\n", "PeerLogicValidation::NewPoWValidBlock",
@@ -919,6 +912,7 @@ bool static ProcessMessage(CNode *pfrom,
             int nLimit = MAX_HEADERS_RESULTS;
             LogPrintf("getheaders %d to %s from peer=%d\n", (pindex ? pindex->nHeight : -1),
                 hashStop.IsNull() ? "end" : hashStop.ToString(), pfrom->id);
+            // TODO : evaluate if this cs_main lock is needed
             LOCK(cs_main);
             for (; pindex; pindex = g_chainman.chainActive.Next(pindex))
             {
@@ -1234,6 +1228,10 @@ bool static ProcessMessage(CNode *pfrom,
         // header arrives.
         if (fNewUnconnectedHeaders)
         {
+            // TODO : there is probably a better way to fix this issue where sometimes the missing headers
+            // never come in and we need to request them but dont, probably on the sending side, we should
+            // make sure we are announcing all headers to the peer since the last one we sent
+            connman.PushMessage(pfrom, NetMsgType::GETHEADERS, g_chainman.chainActive.GetLocator(g_chainman.pindexBestHeader), uint256());
             return true;
         }
         // If possible add any previously unconnected headers to the headers vector and remove any expired entries.
@@ -2200,9 +2198,8 @@ bool SendMessages(CNode *pto, CConnman &connman)
 
     // use temp variables because they are atomic
     // TODO : add some chain not in sync conditional as well
-
     // CBlockIndex *pTip = g_chainman.chainActive.Tip();
-    // CBlockIndex *pBestInvalid = pindexBestInvalid;
+    // CBlockIndex *pBestInvalid = pindexBestInvalid.load();
     // if (pBestInvalid && pTip && pBestInvalid->nChainWork > pTip->nChainWork)
     {
         g_requestman->RequestNextBlocksToDownload(pto);

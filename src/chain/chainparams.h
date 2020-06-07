@@ -104,8 +104,6 @@ const CChainParams &Params();
 
 static const int64_t LONGER_BLOCKTIME_HARDFORK = 1525478400; // May 5th at 00:00:00 UTC
 
-// TODO : Fix this workaround that is used for RPC on command line. shuould either construct pnetMan earlier or find
-// another way to get this value
 int RPCPortFromCommandLine();
 
 /**

@@ -216,7 +216,7 @@ void CheckForkWarningConditions()
 
     if (pindexBestForkTip ||
         (pindexBestInvalid &&
-            pindexBestInvalid->nChainWork > g_chainman.chainActive.Tip()->nChainWork +
+            pindexBestInvalid.load()->nChainWork > g_chainman.chainActive.Tip()->nChainWork +
                                                 (GetBlockProof(*g_chainman.chainActive.Tip()) * 6)))
     {
         if (!fLargeWorkForkFound && pindexBestForkBase)
@@ -771,8 +771,10 @@ CBlockIndex *FindMostWorkChain()
             {
                 // Candidate chain is not usable (either invalid or missing data)
                 if (fFailedChain &&
-                    (pindexBestInvalid == NULL || pindexNew->nChainWork > pindexBestInvalid->nChainWork))
+                    (pindexBestInvalid == nullptr || pindexNew->nChainWork > pindexBestInvalid.load()->nChainWork))
+                {
                     pindexBestInvalid = pindexNew;
+                }
                 CBlockIndex *pindexFailed = pindexNew;
                 // Remove the entire chain from the set.
                 while (pindexTest != pindexFailed)
@@ -806,8 +808,10 @@ CBlockIndex *FindMostWorkChain()
 
 void InvalidChainFound(CBlockIndex *pindexNew)
 {
-    if (!pindexBestInvalid || pindexNew->nChainWork > pindexBestInvalid->nChainWork)
+    if (!pindexBestInvalid || pindexNew->nChainWork > pindexBestInvalid.load()->nChainWork)
+    {
         pindexBestInvalid = pindexNew;
+    }
 
     LogPrintf("%s: invalid block=%s  height=%d  log2_work=%.8g  date=%s\n", __func__,
         pindexNew->GetBlockHash().ToString(), pindexNew->nHeight, log(pindexNew->nChainWork.getdouble()) / log(2.0),

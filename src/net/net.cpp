@@ -66,10 +66,10 @@ extern CCriticalSection cs_mapLocalHost;
 extern std::map<CNetAddr, LocalServiceInfo> mapLocalHost;
 static bool vfLimited[NET_MAX] = {};
 
-// TODO : replace this limited map with something else in the request manager
+// TODO : replace this map with something else in the request manager
 // tracking what was asked for and who to ask for txs is currently very poorly managed
 CCriticalSection cs_alreadyaskfor;
-limitedmap<uint256, int64_t> mapAlreadyAskedFor(MAX_INV_SZ);
+std::map<uint256, int64_t> mapAlreadyAskedFor;
 
 std::string strSubVersion;
 

@@ -95,9 +95,6 @@ CScript COINBASE_FLAGS;
 
 const std::string strMessageMagic = "ECC Signed Message:\n";
 
-
-CBlockIndex *pindexBestInvalid;
-
 /** All pairs A->B, where A (or one of its ancestors) misses transactions, but B has transactions.
  * Pruned nodes may have entries where B is missing data.
  */
@@ -962,7 +959,7 @@ bool ReconsiderBlock(CValidationState &state, CBlockIndex *pindex)
         if (pindex == pindexBestInvalid)
         {
             // Reset invalid block marker if it was pointing to one of those.
-            pindexBestInvalid = NULL;
+            pindexBestInvalid = nullptr;
         }
     }
     // Remove the invalidity flag from all descendants.
@@ -981,7 +978,7 @@ bool ReconsiderBlock(CValidationState &state, CBlockIndex *pindex)
             if (it->second == pindexBestInvalid)
             {
                 // Reset invalid block marker if it was pointing to one of those.
-                pindexBestInvalid = NULL;
+                pindexBestInvalid = nullptr;
             }
         }
         it++;
