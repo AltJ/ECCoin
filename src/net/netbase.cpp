@@ -517,7 +517,7 @@ static bool ConnectSocketDirectly(const CService &addrConnect, SOCKET &hSocketRe
     socklen_t len = sizeof(sockaddr);
     if (!addrConnect.GetSockAddr((struct sockaddr *)&sockaddr, &len))
     {
-        LogPrintf("Cannot connect to %s: unsupported network\n", addrConnect.ToString());
+        LogPrint("net", "Cannot connect to %s: unsupported network\n", addrConnect.ToString());
         return false;
     }
 
@@ -557,13 +557,13 @@ static bool ConnectSocketDirectly(const CService &addrConnect, SOCKET &hSocketRe
             int nRet = select(hSocket + 1, nullptr, &fdset, nullptr, &timeout);
             if (nRet == 0)
             {
-                LogPrintf("connection to %s timeout\n", addrConnect.ToString());
+                LogPrint("net", "connection to %s timeout\n", addrConnect.ToString());
                 CloseSocket(hSocket);
                 return false;
             }
             if (nRet == SOCKET_ERROR)
             {
-                LogPrintf(
+                LogPrint("net",
                     "select() for %s failed: %s\n", addrConnect.ToString(), NetworkErrorString(WSAGetLastError()));
                 CloseSocket(hSocket);
                 return false;
@@ -575,14 +575,14 @@ static bool ConnectSocketDirectly(const CService &addrConnect, SOCKET &hSocketRe
             if (getsockopt(hSocket, SOL_SOCKET, SO_ERROR, &nRet, &nRetSize) == SOCKET_ERROR)
 #endif
             {
-                LogPrintf(
+                LogPrint("net",
                     "getsockopt() for %s failed: %s\n", addrConnect.ToString(), NetworkErrorString(WSAGetLastError()));
                 CloseSocket(hSocket);
                 return false;
             }
             if (nRet != 0)
             {
-                LogPrintf(
+                LogPrint("net",
                     "connect() to %s failed after select(): %s\n", addrConnect.ToString(), NetworkErrorString(nRet));
                 CloseSocket(hSocket);
                 return false;
@@ -594,7 +594,7 @@ static bool ConnectSocketDirectly(const CService &addrConnect, SOCKET &hSocketRe
         else
 #endif
         {
-            LogPrintf("connect() to %s failed: %s\n", addrConnect.ToString(), NetworkErrorString(WSAGetLastError()));
+            LogPrint("net", "connect() to %s failed: %s\n", addrConnect.ToString(), NetworkErrorString(WSAGetLastError()));
             CloseSocket(hSocket);
             return false;
         }

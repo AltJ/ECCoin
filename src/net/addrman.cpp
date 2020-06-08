@@ -63,6 +63,23 @@ bool CAddrInfo::IsTerrible(int64_t nNow) const
     return false;
 }
 
+bool CAddrInfo::HasHighFailedAttempts(int64_t nNow) const
+{
+    // never remove things tried in the last minute
+    if (nLastTry && nLastTry >= nNow - 60)
+        return false;
+
+    // tried N times and never a success
+    if (nLastSuccess == 0 && nAttempts >= ADDRMAN_RETRIES)
+        return true;
+
+    if (nNow - nLastSuccess > ADDRMAN_MIN_FAIL_DAYS * 24 * 60 * 60 &&
+        nAttempts >= ADDRMAN_MAX_FAILURES) // N successive failures in the last week
+        return true;
+
+    return false;
+}
+
 double CAddrInfo::GetChance(int64_t nNow) const
 {
     double fChance = 1.0;
@@ -136,6 +153,48 @@ void CAddrMan::Delete(int nId)
     mapAddr.erase(info);
     mapInfo.erase(nId);
     nNew--;
+}
+
+void CAddrMan::Delete(CAddrInfo _info)
+{
+    LOCK(cs_addrman);
+    int nId = 0;
+    CAddrInfo *pinfo = Find(_info, &nId);
+    if (pinfo)
+    {
+        assert(mapInfo.count(nId) != 0);
+        CAddrInfo &info = mapInfo[nId];
+        int bucket = 0;
+        if (info.fInTried)
+        {
+            // remove the entry from all tried buckets
+            for (bucket = 0; bucket < ADDRMAN_TRIED_BUCKET_COUNT; bucket++)
+            {
+                int pos = info.GetBucketPosition(nKey, false, bucket);
+                if (vvTried[bucket][pos] == nId)
+                {
+                    vvTried[bucket][pos] = -1;
+                }
+            }
+        }
+        nTried--;
+        // remove the entry from all new buckets
+        for (bucket = 0; bucket < ADDRMAN_NEW_BUCKET_COUNT; bucket++)
+        {
+            int pos = info.GetBucketPosition(nKey, true, bucket);
+            if (vvNew[bucket][pos] == nId)
+            {
+                vvNew[bucket][pos] = -1;
+                info.nRefCount--;
+            }
+        }
+        nNew--;
+        assert(info.nRefCount == 0);
+        SwapRandom(info.nRandomPos, vRandom.size() - 1);
+        vRandom.pop_back();
+        mapAddr.erase(info);
+        mapInfo.erase(nId);
+    }
 }
 
 void CAddrMan::ClearNew(int nUBucket, int nUBucketPos)

@@ -95,6 +95,10 @@ public:
     //! it can just be deleted
     bool IsTerrible(int64_t nNow = GetAdjustedTime()) const;
 
+    //! Determine whether the attempt statistics about this entry are bad enough so that
+    //! it can just be deleted
+    bool HasHighFailedAttempts(int64_t nNow = GetAdjustedTime()) const;
+
     //! Calculate the relative chance this entry should be given when selecting
     //! nodes to connect to
     double GetChance(int64_t nNow = GetAdjustedTime()) const;
@@ -638,6 +642,9 @@ public:
         SetServices_(addr, nServices);
         Check();
     }
+
+    //! Delete an entry. It must not be in tried, and have refcount 0.
+    void Delete(CAddrInfo info);
 };
 
 #endif // BITCOIN_ADDRMAN_H
