@@ -176,24 +176,29 @@ void CAddrMan::Delete(CAddrInfo _info)
                     vvTried[bucket][pos] = -1;
                 }
             }
+            nTried--;
         }
-        nTried--;
-        // remove the entry from all new buckets
-        for (bucket = 0; bucket < ADDRMAN_NEW_BUCKET_COUNT; bucket++)
+        else
         {
-            int pos = info.GetBucketPosition(nKey, true, bucket);
-            if (vvNew[bucket][pos] == nId)
+            // remove the entry from all new buckets
+            for (bucket = 0; bucket < ADDRMAN_NEW_BUCKET_COUNT; bucket++)
             {
-                vvNew[bucket][pos] = -1;
-                info.nRefCount--;
+                int pos = info.GetBucketPosition(nKey, true, bucket);
+                if (vvNew[bucket][pos] == nId)
+                {
+                    vvNew[bucket][pos] = -1;
+                    info.nRefCount--;
+                }
             }
+            nNew--;
         }
-        nNew--;
         assert(info.nRefCount == 0);
         SwapRandom(info.nRandomPos, vRandom.size() - 1);
         vRandom.pop_back();
+        LogPrint("net", "removed address %s from addrman \n", pinfo->ToString());
         mapAddr.erase(info);
         mapInfo.erase(nId);
+
     }
 }
 

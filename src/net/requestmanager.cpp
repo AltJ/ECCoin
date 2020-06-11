@@ -446,7 +446,6 @@ void CRequestManager::RequestNextBlocksToDownload(CNode* node)
     {
         std::vector<CBlockIndex *> vToDownload;
         FindNextBlocksToDownload(node, MAX_BLOCKS_IN_TRANSIT_PER_PEER - nBlocksInFlight, vToDownload);
-        LogPrint("net", "vToDownload size = %u for peer %d \n", vToDownload.size(), node->GetId());
         std::vector<CInv> vGetBlocks;
         for (CBlockIndex *pindex : vToDownload)
         {
@@ -490,14 +489,6 @@ void CRequestManager::RequestNextBlocksToDownload(CNode* node)
                     MarkBlockAsInFlight(node->GetId(), block.hash, g_chainman.LookupBlockIndex(block.hash));
                 }
             }
-            else
-            {
-                LogPrint("net", "vToFetchNew was empty for peer %d \n", node->GetId());
-            }
-        }
-        else
-        {
-            LogPrint("net", "vGetBlocks was empty for peer %d \n", node->GetId());
         }
     }
 }
@@ -528,15 +519,6 @@ void CRequestManager::FindNextBlocksToDownload(CNode *node, unsigned int count, 
         state->pindexBestKnownBlock->nChainWork < g_chainman.chainActive.Tip()->nChainWork)
     {
         // This peer has nothing interesting.
-        LogPrint("net", "not requesting blocks from peer %d, they do not have anything we need because ", node->GetId());
-        if (state->pindexBestKnownBlock == nullptr)
-        {
-            LogPrint("net", "best known block was NULLPTR \n");
-        }
-        else
-        {
-            LogPrint("net", "best known block was had LESS work than our tip \n");
-        }
         return;
     }
 
@@ -553,7 +535,6 @@ void CRequestManager::FindNextBlocksToDownload(CNode *node, unsigned int count, 
     state->pindexLastCommonBlock = LastCommonAncestor(state->pindexLastCommonBlock, state->pindexBestKnownBlock);
     if (state->pindexLastCommonBlock == state->pindexBestKnownBlock)
     {
-        LogPrint("net", "returning, common is the same as best known \n");
         return;
     }
 
@@ -594,14 +575,12 @@ void CRequestManager::FindNextBlocksToDownload(CNode *node, unsigned int count, 
                 {
                     // we already requested this block.
                     // TODO : consider also requesting this block from a second peer that has it
-                    LogPrint("net", "we already requesdted block with hash %s, continue \n", blockHash.ToString().c_str());
                     continue;
                 }
             }
             if (!pindex->IsValid(BLOCK_VALID_TREE))
             {
                 // We consider the chain that this peer is on invalid.
-                LogPrint("net", "we consider block with hash %s on a chain that is invalid, return \n", blockHash.ToString().c_str());
                 return;
             }
             if (pindex->nStatus & BLOCK_HAVE_DATA || g_chainman.chainActive.Contains(pindex))
