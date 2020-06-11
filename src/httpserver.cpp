@@ -9,9 +9,9 @@
 #include "httpserver.h"
 
 #include "args.h"
+#include "chain/chainparams.h"
 #include "init.h"
 #include "net/netbase.h"
-#include "chain/chainparams.h"
 #include "rpc/rpcprotocol.h" // For HTTP status codes
 #include "sync.h"
 

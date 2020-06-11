@@ -563,8 +563,8 @@ static bool ConnectSocketDirectly(const CService &addrConnect, SOCKET &hSocketRe
             }
             if (nRet == SOCKET_ERROR)
             {
-                LogPrint("net",
-                    "select() for %s failed: %s\n", addrConnect.ToString(), NetworkErrorString(WSAGetLastError()));
+                LogPrint("net", "select() for %s failed: %s\n", addrConnect.ToString(),
+                    NetworkErrorString(WSAGetLastError()));
                 CloseSocket(hSocket);
                 return false;
             }
@@ -575,15 +575,15 @@ static bool ConnectSocketDirectly(const CService &addrConnect, SOCKET &hSocketRe
             if (getsockopt(hSocket, SOL_SOCKET, SO_ERROR, &nRet, &nRetSize) == SOCKET_ERROR)
 #endif
             {
-                LogPrint("net",
-                    "getsockopt() for %s failed: %s\n", addrConnect.ToString(), NetworkErrorString(WSAGetLastError()));
+                LogPrint("net", "getsockopt() for %s failed: %s\n", addrConnect.ToString(),
+                    NetworkErrorString(WSAGetLastError()));
                 CloseSocket(hSocket);
                 return false;
             }
             if (nRet != 0)
             {
-                LogPrint("net",
-                    "connect() to %s failed after select(): %s\n", addrConnect.ToString(), NetworkErrorString(nRet));
+                LogPrint("net", "connect() to %s failed after select(): %s\n", addrConnect.ToString(),
+                    NetworkErrorString(nRet));
                 CloseSocket(hSocket);
                 return false;
             }
@@ -594,7 +594,8 @@ static bool ConnectSocketDirectly(const CService &addrConnect, SOCKET &hSocketRe
         else
 #endif
         {
-            LogPrint("net", "connect() to %s failed: %s\n", addrConnect.ToString(), NetworkErrorString(WSAGetLastError()));
+            LogPrint(
+                "net", "connect() to %s failed: %s\n", addrConnect.ToString(), NetworkErrorString(WSAGetLastError()));
             CloseSocket(hSocket);
             return false;
         }

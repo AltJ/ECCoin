@@ -2045,13 +2045,13 @@ void CConnman::PushNodeVersion(CNode *pnode, int64_t nTime)
 
     if (g_logger->fLogIPs)
     {
-        LogPrintf("send version message: version %d, blocks=%d, "
+        LogPrint("net", "send version message: version %d, blocks=%d, "
                   "us=%s, them=%s, peer=%d\n",
             PROTOCOL_VERSION, nNodeStartingHeight, addrMe.ToString(), addrYou.ToString(), nodeid);
     }
     else
     {
-        LogPrintf("send version message: version %d, blocks=%d, us=%s, peer=%d\n", PROTOCOL_VERSION,
+        LogPrint("net", "send version message: version %d, blocks=%d, us=%s, peer=%d\n", PROTOCOL_VERSION,
             nNodeStartingHeight, addrMe.ToString(), nodeid);
     }
 }

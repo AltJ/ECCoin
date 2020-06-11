@@ -10,11 +10,11 @@
 
 #include "args.h"
 #include "chain/chain.h"
+#include "chain/chainparams.h"
 #include "coins.h"
 #include "crypto/hash.h"
 #include "init.h"
 #include "main.h"
-#include "chain/chainparams.h"
 #include "pow.h"
 #include "uint256.h"
 

@@ -23,11 +23,7 @@ extern std::atomic<int64_t> nMedianTimeOffset;
  *  - Median of other nodes clocks
  *  - The user (asking the user to fix the system clock if the first two disagree)
  */
-int64_t GetTimeOffset()
-{
-    return nMedianTimeOffset.load();
-}
-
+int64_t GetTimeOffset() { return nMedianTimeOffset.load(); }
 int64_t GetAdjustedTime() { return GetTime() + GetTimeOffset(); }
 static int64_t abs64(int64_t n) { return (n >= 0 ? n : -n); }
 #define BITCOIN_TIMEDATA_MAX_SAMPLES 200

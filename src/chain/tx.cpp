@@ -10,11 +10,11 @@
 #include "args.h"
 #include "blockstorage/blockstorage.h"
 #include "chain/chain.h"
+#include "chain/chainparams.h"
 #include "consensus/consensus.h"
 #include "crypto/hash.h"
 #include "init.h"
 #include "main.h"
-#include "chain/chainparams.h"
 #include "timedata.h"
 #include "tinyformat.h"
 #include "txdb.h"
@@ -251,8 +251,7 @@ uint64_t CTransaction::GetCoinAge(uint64_t nCoinAge, bool byValue) const
 
         CTransaction txPrev;
         uint256 blockHashOfTx;
-        if (!GetTransaction(
-                txin.prevout.hash, txPrev, Params().GetConsensus(), blockHashOfTx))
+        if (!GetTransaction(txin.prevout.hash, txPrev, Params().GetConsensus(), blockHashOfTx))
         {
             return false;
         }
@@ -306,8 +305,7 @@ bool CTransaction::GetCoinAge(uint64_t &nCoinAge) const
 
         CTransaction txPrev;
         uint256 blockHashOfTx;
-        if (!GetTransaction(
-                txin.prevout.hash, txPrev, Params().GetConsensus(), blockHashOfTx))
+        if (!GetTransaction(txin.prevout.hash, txPrev, Params().GetConsensus(), blockHashOfTx))
         {
             return false;
         }

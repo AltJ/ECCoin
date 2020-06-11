@@ -18,8 +18,7 @@ CVerifyDB::CVerifyDB() {}
 CVerifyDB::~CVerifyDB() {}
 bool CVerifyDB::VerifyDB(const CChainParams &chainparams, CCoinsView *coinsview, int nCheckLevel, int nCheckDepth)
 {
-    if (g_chainman.chainActive.Tip() == nullptr ||
-        g_chainman.chainActive.Tip()->pprev == nullptr)
+    if (g_chainman.chainActive.Tip() == nullptr || g_chainman.chainActive.Tip()->pprev == nullptr)
         return true;
 
     // Verify blocks in the best chain
@@ -35,8 +34,7 @@ bool CVerifyDB::VerifyDB(const CChainParams &chainparams, CCoinsView *coinsview,
     int nGoodTransactions = 0;
     CValidationState state;
     LOCK(cs_main);
-    for (CBlockIndex *pindex = g_chainman.chainActive.Tip(); pindex && pindex->pprev;
-         pindex = pindex->pprev)
+    for (CBlockIndex *pindex = g_chainman.chainActive.Tip(); pindex && pindex->pprev; pindex = pindex->pprev)
     {
         if (shutdown_threads.load())
         {

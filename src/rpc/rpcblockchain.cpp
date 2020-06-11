@@ -9,13 +9,13 @@
 #include "args.h"
 #include "blockstorage/blockstorage.h"
 #include "chain/chain.h"
+#include "chain/chainparams.h"
 #include "chain/checkpoints.h"
 #include "chain/tx.h"
 #include "coins.h"
 #include "consensus/validation.h"
 #include "init.h"
 #include "main.h"
-#include "chain/chainparams.h"
 #include "policy/policy.h"
 #include "processblock.h"
 #include "rpcserver.h"
@@ -29,7 +29,6 @@
 #include <stdint.h>
 
 #include <univalue.h>
-
 
 
 extern void TxToJSON(const CTransaction &tx, const uint256 hashBlock, UniValue &entry);
@@ -728,9 +727,7 @@ UniValue getblockchaininfo(const UniValue &params, bool fHelp)
     UniValue obj(UniValue::VOBJ);
     obj.push_back(Pair("chain", Params().NetworkIDString()));
     obj.push_back(Pair("blocks", (int)g_chainman.chainActive.Height()));
-    obj.push_back(Pair("headers", g_chainman.pindexBestHeader ?
-                                      g_chainman.pindexBestHeader.load()->nHeight :
-                                      -1));
+    obj.push_back(Pair("headers", g_chainman.pindexBestHeader ? g_chainman.pindexBestHeader.load()->nHeight : -1));
     obj.push_back(Pair("bestblockhash", g_chainman.chainActive.Tip()->GetBlockHash().GetHex()));
     obj.push_back(Pair("difficulty", (double)GetDifficulty()));
     obj.push_back(Pair("mediantime", (int64_t)g_chainman.chainActive.Tip()->GetMedianTimePast()));

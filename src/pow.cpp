@@ -9,8 +9,8 @@
 
 #include "arith_uint256.h"
 #include "chain/chain.h"
-#include "main.h"
 #include "chain/chainparams.h"
+#include "main.h"
 #include "uint256.h"
 #include "util/util.h"
 

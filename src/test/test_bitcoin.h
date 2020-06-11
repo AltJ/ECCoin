@@ -1,9 +1,9 @@
 #ifndef BITCOIN_TEST_TEST_BITCOIN_H
 #define BITCOIN_TEST_TEST_BITCOIN_H
 
+#include "chain/chainparams.h"
 #include "fs.h"
 #include "key.h"
-#include "chain/chainparams.h"
 #include "pubkey.h"
 #include "txdb.h"
 #include "txmempool.h"
@@ -12,7 +12,6 @@
 
 class CConnman;
 class CNode;
-
 
 
 /** Basic testing setup.

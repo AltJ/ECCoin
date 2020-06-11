@@ -1118,8 +1118,7 @@ UniValue listsinceblock(const UniValue &params, bool fHelp)
             ListTransactions(tx, 0, true, transactions, filter);
     }
 
-    CBlockIndex *pblockLast =
-        g_chainman.chainActive[g_chainman.chainActive.Height() + 1 - target_confirms];
+    CBlockIndex *pblockLast = g_chainman.chainActive[g_chainman.chainActive.Height() + 1 - target_confirms];
     uint256 lastblock = pblockLast ? pblockLast->GetBlockHash() : uint256();
 
     UniValue ret(UniValue::VOBJ);

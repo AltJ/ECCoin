@@ -6,12 +6,12 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "chain/chain.h"
+#include "chain/chainparams.h"
 #include "crypto/common.h"
 #include "crypto/hash.h"
 #include "crypto/scrypt.h"
 #include "init.h"
 #include "main.h"
-#include "chain/chainparams.h"
 #include "timedata.h"
 #include "tinyformat.h"
 #include "util/util.h"

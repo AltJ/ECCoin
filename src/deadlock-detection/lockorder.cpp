@@ -41,7 +41,7 @@ void CLockOrderTracker::potential_lock_order_issue_detected(LockStackEntry &this
     LogPrintf("This occurred while trying to lock: %s after %s \n", thisLock.GetMutexName().c_str(),
         otherLock.GetMutexName().c_str());
     LogPrintf("Thread with id %" PRIu64
-         " attempted to lock %s on line %i in file %s after locking %s on line %i in file %s\n",
+              " attempted to lock %s on line %i in file %s after locking %s on line %i in file %s\n",
         tid, thisLock.GetMutexName().c_str(), thisLock.GetLineNumber(), thisLock.GetFileName().c_str(),
         otherLock.GetMutexName().c_str(), otherLock.GetLineNumber(), otherLock.GetFileName().c_str());
     LogPrintf("We have previously locked these locks in the reverse order\n");

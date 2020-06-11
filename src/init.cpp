@@ -411,8 +411,8 @@ std::string HelpMessage()
         "-permitbaremultisig", strprintf(("Relay non-P2SH multisig (default: %u)"), DEFAULT_PERMIT_BAREMULTISIG));
     strUsage += HelpMessageOpt("-peerbloomfilters",
         strprintf(("Support filtering of blocks and transaction with bloom filters (default: %u)"), 1));
-    strUsage += HelpMessageOpt("-port=<port>", strprintf(("Listen for connections on <port> (default: %u)"),
-                                                   Params().GetDefaultPort()));
+    strUsage += HelpMessageOpt(
+        "-port=<port>", strprintf(("Listen for connections on <port> (default: %u)"), Params().GetDefaultPort()));
     strUsage += HelpMessageOpt("-proxy=<ip:port>", ("Connect through SOCKS5 proxy"));
     strUsage += HelpMessageOpt("-proxyrandomize",
         strprintf(("Randomize credentials for every proxy connection. This enables Tor stream isolation (default: %u)"),
@@ -502,9 +502,8 @@ std::string HelpMessage()
             strprintf("Do a full consistency check for mapBlockIndex, setBlockIndexCandidates, chainActive and "
                       "mapBlocksUnlinked occasionally. Also sets -checkmempool (default: %u)",
                                        Params().DefaultConsistencyChecks()));
-        strUsage +=
-            HelpMessageOpt("-checkmempool=<n>", strprintf("Run checks every <n> transactions (default: %u)",
-                                                    Params().DefaultConsistencyChecks()));
+        strUsage += HelpMessageOpt("-checkmempool=<n>",
+            strprintf("Run checks every <n> transactions (default: %u)", Params().DefaultConsistencyChecks()));
         strUsage += HelpMessageOpt(
             "-checkpoints", strprintf("Disable expensive verification for known chain history (default: %u)",
                                 DEFAULT_CHECKPOINTS_ENABLED));
@@ -619,8 +618,8 @@ std::string HelpMessage()
         "-rpcauth=<userpw>", ("Username and hashed password for JSON-RPC connections. The field <userpw> comes in the "
                               "format: <USERNAME>:<SALT>$<HASH>. A canonical python script is included in "
                               "share/rpcuser. This option can be specified multiple times"));
-    strUsage += HelpMessageOpt("-rpcport=<port>", strprintf(("Listen for JSON-RPC connections on <port> (default: %u)"),
-                                                      Params().GetRPCPort()));
+    strUsage += HelpMessageOpt("-rpcport=<port>",
+        strprintf(("Listen for JSON-RPC connections on <port> (default: %u)"), Params().GetRPCPort()));
     strUsage += HelpMessageOpt(
         "-rpcallowip=<ip>", ("Allow JSON-RPC connections from specified source. Valid for <ip> are a single IP (e.g. "
                              "1.2.3.4), a network/netmask (e.g. 1.2.3.4/255.255.255.0) or a network/CIDR (e.g. "
@@ -1494,8 +1493,7 @@ bool AppInit2(thread_group &threadGroup)
                 {
                     RECURSIVEREADLOCK(g_chainman.cs_mapBlockIndex);
                     if (!g_chainman.mapBlockIndex.empty() &&
-                        g_chainman.mapBlockIndex.count(chainparams.GetConsensus().hashGenesisBlock) ==
-                            0)
+                        g_chainman.mapBlockIndex.count(chainparams.GetConsensus().hashGenesisBlock) == 0)
                     {
                         return InitError("Incorrect or no genesis block found. Wrong datadir for network?");
                     }

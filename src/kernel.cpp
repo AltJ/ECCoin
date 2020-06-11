@@ -9,13 +9,13 @@
 #include "args.h"
 #include "blockstorage/blockstorage.h"
 #include "chain/chain.h"
+#include "chain/chainparams.h"
 #include "consensus/consensus.h"
 #include "crypto/scrypt.h"
 #include "init.h"
 #include "kernel.h"
 #include "main.h"
 #include "net/net.h"
-#include "chain/chainparams.h"
 #include "script/stakescript.h"
 #include "timedata.h"
 #include "txdb.h"
@@ -220,10 +220,8 @@ bool CheckStakeKernelHash(int nHeight,
         arith_uint256 hashTarget;
         bool fNegative;
         bool fOverflow;
-        hashTarget.SetCompact(
-            GetNextTargetRequired(g_chainman.chainActive.Tip(), true), &fNegative, &fOverflow);
-        if (fNegative || hashTarget == 0 || fOverflow ||
-            hashTarget > UintToArith256(Params().GetConsensus().posLimit))
+        hashTarget.SetCompact(GetNextTargetRequired(g_chainman.chainActive.Tip(), true), &fNegative, &fOverflow);
+        if (fNegative || hashTarget == 0 || fOverflow || hashTarget > UintToArith256(Params().GetConsensus().posLimit))
             return error("CheckStakeKernelHash(): nBits below minimum work for proof of stake");
 
         std::string reductionHex = reduction.GetHex();

@@ -19,6 +19,7 @@
 #include "addrdb.h"
 #include "amount.h"
 #include "bloom.h"
+#include "chain/chainparams.h"
 #include "compat.h"
 #include "connman.h"
 #include "crypto/hash.h"
@@ -27,7 +28,6 @@
 #include "net/netbase.h"
 #include "net/protocol.h"
 #include "net/tagstore.h"
-#include "chain/chainparams.h"
 #include "random.h"
 #include "streams.h"
 #include "sync.h"
@@ -44,7 +44,6 @@
 
 /** Subversion as sent to the P2P network in `version` messages */
 extern std::string strSubVersion;
-
 
 
 class CTransaction;

@@ -8,8 +8,8 @@
 #include "util/util.h"
 #include "args.h"
 
-#include "init.h"
 #include "chain/chainparams.h"
+#include "init.h"
 #include "random.h"
 #include "serialize.h"
 #include "sync.h"

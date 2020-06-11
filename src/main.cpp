@@ -11,6 +11,7 @@
 #include "arith_uint256.h"
 #include "blockstorage/blockstorage.h"
 #include "chain/chain.h"
+#include "chain/chainparams.h"
 #include "chain/checkpoints.h"
 #include "checkqueue.h"
 #include "consensus/consensus.h"
@@ -24,7 +25,6 @@
 #include "net/addrman.h"
 #include "net/messages.h"
 #include "net/net.h"
-#include "chain/chainparams.h"
 #include "policy/policy.h"
 #include "pow.h"
 #include "processblock.h"
@@ -160,9 +160,8 @@ bool CheckFinalTx(const CTransaction &tx, int flags)
     // When the next block is created its previous block will be the current
     // chain tip, so we use that to calculate the median time passed to
     // IsFinalTx() if LOCKTIME_MEDIAN_TIME_PAST is set.
-    const int64_t nBlockTime = (flags & LOCKTIME_MEDIAN_TIME_PAST) ?
-                                   g_chainman.chainActive.Tip()->GetMedianTimePast() :
-                                   GetAdjustedTime();
+    const int64_t nBlockTime =
+        (flags & LOCKTIME_MEDIAN_TIME_PAST) ? g_chainman.chainActive.Tip()->GetMedianTimePast() : GetAdjustedTime();
 
     return IsFinalTx(tx, nBlockHeight, nBlockTime);
 }
@@ -445,8 +444,8 @@ bool AcceptToMemoryPoolWorker(CTxMemPool &pool,
             }
         }
 
-        CTxMemPoolEntry entry(ptx, nFees, GetTime(), dPriority, g_chainman.chainActive.Height(),
-            pool.HasNoInputsOf(tx), inChainInputValue, fSpendsCoinbase, nSigOps, lp);
+        CTxMemPoolEntry entry(ptx, nFees, GetTime(), dPriority, g_chainman.chainActive.Height(), pool.HasNoInputsOf(tx),
+            inChainInputValue, fSpendsCoinbase, nSigOps, lp);
         unsigned int nSize = entry.GetTxSize();
 
         // Check that the transaction doesn't have an excessive number of
@@ -890,8 +889,8 @@ void PruneBlockIndexCandidates()
     // Note that we can't delete the current block itself, as we may need to return to it later in case a
     // reorganization to a better block fails.
     std::set<CBlockIndex *, CBlockIndexWorkComparator>::iterator it = setBlockIndexCandidates.begin();
-    while (it != setBlockIndexCandidates.end() &&
-           setBlockIndexCandidates.value_comp()(*it, g_chainman.chainActive.Tip()))
+    while (
+        it != setBlockIndexCandidates.end() && setBlockIndexCandidates.value_comp()(*it, g_chainman.chainActive.Tip()))
     {
         setBlockIndexCandidates.erase(it++);
     }
@@ -916,8 +915,8 @@ bool InvalidateBlock(CValidationState &state, const Consensus::Params &consensus
         // unconditionally valid already, so force disconnect away from it.
         if (!DisconnectTip(state, consensusParams))
         {
-            mempool.removeForReorg(pcoinsTip.get(), g_chainman.chainActive.Tip()->nHeight + 1,
-                STANDARD_LOCKTIME_VERIFY_FLAGS);
+            mempool.removeForReorg(
+                pcoinsTip.get(), g_chainman.chainActive.Tip()->nHeight + 1, STANDARD_LOCKTIME_VERIFY_FLAGS);
             return false;
         }
     }
@@ -937,8 +936,7 @@ bool InvalidateBlock(CValidationState &state, const Consensus::Params &consensus
     }
 
     InvalidChainFound(pindex);
-    mempool.removeForReorg(
-        pcoinsTip.get(), g_chainman.chainActive.Tip()->nHeight + 1, STANDARD_LOCKTIME_VERIFY_FLAGS);
+    mempool.removeForReorg(pcoinsTip.get(), g_chainman.chainActive.Tip()->nHeight + 1, STANDARD_LOCKTIME_VERIFY_FLAGS);
     return true;
 }
 

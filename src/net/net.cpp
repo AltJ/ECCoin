@@ -10,6 +10,7 @@
 
 #include "args.h"
 #include "beta.h"
+#include "chain/chainparams.h"
 #include "chain/tx.h"
 #include "clientversion.h"
 #include "consensus/consensus.h"
@@ -17,7 +18,6 @@
 #include "crypto/hash.h"
 #include "init.h"
 #include "net/addrman.h"
-#include "chain/chainparams.h"
 
 #include "util/utilstrencodings.h"
 
@@ -76,12 +76,7 @@ std::string strSubVersion;
 // Signals for message handling
 static CNodeSignals g_signals;
 CNodeSignals &GetNodeSignals() { return g_signals; }
-
-unsigned short GetListenPort()
-{
-    return (unsigned short)(gArgs.GetArg("-port", Params().GetDefaultPort()));
-}
-
+unsigned short GetListenPort() { return (unsigned short)(gArgs.GetArg("-port", Params().GetDefaultPort())); }
 // find 'best' local address for a particular peer
 bool GetLocal(CService &addr, const CNetAddr *paddrPeer)
 {
@@ -155,7 +150,7 @@ void AdvertiseLocal(CNode *pnode)
         }
         if (addrLocal.IsRoutable())
         {
-            LogPrintf("AdvertiseLocal: advertising address %s\n", addrLocal.ToString());
+            LogPrint("net", "AdvertiseLocal: advertising address %s\n", addrLocal.ToString());
             FastRandomContext insecure_rand;
             pnode->PushAddress(addrLocal, insecure_rand);
         }

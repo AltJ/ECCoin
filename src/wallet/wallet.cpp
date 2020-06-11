@@ -2994,8 +2994,7 @@ void CWallet::GetKeyBirthTimes(std::map<CKeyID, int64_t> &mapKeyBirth) const
 
     // map in which we'll infer heights of other keys
     // the tip can be reorganised; use a 144-block safety margin
-    CBlockIndex *pindexMax =
-        g_chainman.chainActive[std::max(0, g_chainman.chainActive.Height() - 144)];
+    CBlockIndex *pindexMax = g_chainman.chainActive[std::max(0, g_chainman.chainActive.Height() - 144)];
     std::map<CKeyID, CBlockIndex *> mapKeyFirstBlock;
     std::set<CKeyID> setKeys;
     GetKeys(setKeys);
@@ -3314,8 +3313,7 @@ bool CWallet::CreateCoinStake(const CKeyStore &keystore,
 
         // LogPrintf(">> block.GetBlockTime() = %"PRI64d", nStakeMinAge = %d, txNew.nTime = %d\n", block.GetBlockTime(),
         // nStakeMinAge,txNew.nTime);
-        if (block.GetBlockTime() + Params().getStakeMinAge() >
-            txNew.nTime - nMaxStakeSearchInterval)
+        if (block.GetBlockTime() + Params().getStakeMinAge() > txNew.nTime - nMaxStakeSearchInterval)
             continue; // only count coins meeting min age requirement
 
         {
@@ -3325,8 +3323,8 @@ bool CWallet::CreateCoinStake(const CKeyStore &keystore,
             uint256 hashProofOfStake;
             hashProofOfStake.SetNull();
             COutPoint prevoutStake = COutPoint(pcoin.first->tx->GetHash(), pcoin.second);
-            if (CheckStakeKernelHash(g_chainman.chainActive.Tip()->nHeight + 1, block,
-                    txindex.nTxOffset, *(pcoin.first->tx), prevoutStake, txNew.nTime, hashProofOfStake))
+            if (CheckStakeKernelHash(g_chainman.chainActive.Tip()->nHeight + 1, block, txindex.nTxOffset,
+                    *(pcoin.first->tx), prevoutStake, txNew.nTime, hashProofOfStake))
             {
                 // Found a kernel
                 LogPrint("wallet", "CreateCoinStake : kernel found\n");
@@ -3564,8 +3562,7 @@ bool CWallet::InitLoadWallet()
         CWalletDB walletdb(walletFile);
         CBlockLocator locator;
         if (walletdb.ReadBestBlock(locator))
-            pindexRescan =
-                g_chainman.FindForkInGlobalIndex(g_chainman.chainActive, locator);
+            pindexRescan = g_chainman.FindForkInGlobalIndex(g_chainman.chainActive, locator);
         else
             pindexRescan = g_chainman.chainActive.Genesis();
     }

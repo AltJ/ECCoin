@@ -30,7 +30,6 @@ void EnterCritical(const char *pszName,
 }
 
 void LeaveCritical(void *cs) { remove_lock_critical_exit(cs); }
-
 void AssertWriteLockHeldInternal(const char *pszName,
     const char *pszFile,
     unsigned int nLine,

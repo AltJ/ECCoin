@@ -10,13 +10,13 @@
 #include "base58.h"
 #include "blockgeneration/blockgeneration.h"
 #include "chain/chain.h"
+#include "chain/chainparams.h"
 #include "consensus/consensus.h"
 #include "consensus/validation.h"
 #include "core_io.h"
 #include "init.h"
 #include "main.h"
 #include "net/net.h"
-#include "chain/chainparams.h"
 #include "pow.h"
 #include "processblock.h"
 #include "processheader.h"
@@ -656,9 +656,7 @@ UniValue getblocktemplate(const UniValue &params, bool fHelp)
             {
                 AssertLockHeld(cs_main);
                 assert(pindexPrev && pindexPrev == g_chainman.chainActive.Tip());
-                if (fCheckpointsEnabled &&
-                    !CheckIndexAgainstCheckpoint(
-                        pindexPrev, state, Params(), block.GetHash()))
+                if (fCheckpointsEnabled && !CheckIndexAgainstCheckpoint(pindexPrev, state, Params(), block.GetHash()))
                     return error("%s: CheckIndexAgainstCheckpoint(): %s", __func__, state.GetRejectReason().c_str());
                 CCoinsViewCache viewNew(pcoinsTip.get());
                 CBlockIndex indexDummy(block);
@@ -845,8 +843,8 @@ UniValue getblocktemplate(const UniValue &params, bool fHelp)
     result.push_back(Pair("transactions", transactions));
     result.push_back(Pair("coinbaseaux", aux));
     result.push_back(Pair("coinbasevalue", (int64_t)pblock->vtx[0]->vout[0].nValue));
-    result.push_back(Pair("longpollid",
-        g_chainman.chainActive.Tip()->GetBlockHash().GetHex() + i64tostr(nTransactionsUpdatedLast)));
+    result.push_back(
+        Pair("longpollid", g_chainman.chainActive.Tip()->GetBlockHash().GetHex() + i64tostr(nTransactionsUpdatedLast)));
     result.push_back(Pair("target", hashTarget.GetHex()));
     result.push_back(Pair("mintime", (int64_t)pindexPrev->GetMedianTimePast() + 1));
     result.push_back(Pair("mutable", aMutable));
@@ -983,9 +981,7 @@ UniValue getposblocktemplate(const UniValue &params, bool fHelp)
             {
                 AssertLockHeld(cs_main);
                 assert(pindexPrev && pindexPrev == g_chainman.chainActive.Tip());
-                if (fCheckpointsEnabled &&
-                    !CheckIndexAgainstCheckpoint(
-                        pindexPrev, state, Params(), block.GetHash()))
+                if (fCheckpointsEnabled && !CheckIndexAgainstCheckpoint(pindexPrev, state, Params(), block.GetHash()))
                     return error("%s: CheckIndexAgainstCheckpoint(): %s", __func__, state.GetRejectReason().c_str());
                 CCoinsViewCache viewNew(pcoinsTip.get());
                 CBlockIndex indexDummy(block);
@@ -1171,8 +1167,8 @@ UniValue getposblocktemplate(const UniValue &params, bool fHelp)
     result.push_back(Pair("transactions", transactions));
     result.push_back(Pair("coinbaseaux", aux));
     result.push_back(Pair("coinbasevalue", (int64_t)pblock->vtx[0]->vout[0].nValue));
-    result.push_back(Pair("longpollid",
-        g_chainman.chainActive.Tip()->GetBlockHash().GetHex() + i64tostr(nTransactionsUpdatedLast)));
+    result.push_back(
+        Pair("longpollid", g_chainman.chainActive.Tip()->GetBlockHash().GetHex() + i64tostr(nTransactionsUpdatedLast)));
     result.push_back(Pair("target", hashTarget.GetHex()));
     result.push_back(Pair("mintime", (int64_t)pindexPrev->GetMedianTimePast() + 1));
     result.push_back(Pair("mutable", aMutable));

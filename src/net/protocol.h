@@ -13,8 +13,8 @@
 #ifndef BITCOIN_PROTOCOL_H
 #define BITCOIN_PROTOCOL_H
 
-#include "net/netconstants.h"
 #include "net/netbase.h"
+#include "net/netconstants.h"
 #include "serialize.h"
 #include "uint256.h"
 #include "version.h"

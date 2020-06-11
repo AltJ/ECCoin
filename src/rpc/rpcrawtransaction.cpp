@@ -108,8 +108,7 @@ void TxToJSON(const CTransaction &tx, const uint256 hashBlock, UniValue &entry)
         {
             if (g_chainman.chainActive.Contains(pindex))
             {
-                entry.push_back(
-                    Pair("confirmations", 1 + g_chainman.chainActive.Height() - pindex->nHeight));
+                entry.push_back(Pair("confirmations", 1 + g_chainman.chainActive.Height() - pindex->nHeight));
                 entry.push_back(Pair("time", pindex->GetBlockTime()));
                 entry.push_back(Pair("blocktime", pindex->GetBlockTime()));
             }
@@ -272,8 +271,7 @@ UniValue gettxoutproof(const UniValue &params, bool fHelp)
     if (pblockindex == NULL)
     {
         CTransaction tx;
-        if (!GetTransaction(oneTxid, tx, Params().GetConsensus(), hashBlock, false) ||
-            hashBlock.IsNull())
+        if (!GetTransaction(oneTxid, tx, Params().GetConsensus(), hashBlock, false) || hashBlock.IsNull())
             throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Transaction not yet in block");
         RECURSIVEREADLOCK(g_chainman.cs_mapBlockIndex);
         if (!g_chainman.mapBlockIndex.count(hashBlock))

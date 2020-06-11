@@ -5,9 +5,9 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "chain/chainman.h"
 #include "consensus/tx_verify.h"
 #include "base58.h"
+#include "chain/chainman.h"
 #include "consensus/consensus.h"
 #include "main.h"
 #include "net/messages.h"
@@ -117,8 +117,7 @@ bool Consensus::CheckTxInputs(const CTransaction &tx, CValidationState &state, c
         {
             if (nSpendHeight == -1)
                 nSpendHeight = GetSpendHeight(inputs);
-            if (nSpendHeight - coin.nHeight < COINBASE_MATURITY &&
-                g_chainman.chainActive.Tip()->nHeight > 1600000)
+            if (nSpendHeight - coin.nHeight < COINBASE_MATURITY && g_chainman.chainActive.Tip()->nHeight > 1600000)
                 return state.Invalid(false, REJECT_INVALID, "bad-txns-premature-spend-of-coinbase",
                     strprintf("tried to spend coinbase at depth %d", nSpendHeight - coin.nHeight));
         }

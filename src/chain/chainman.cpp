@@ -6,6 +6,7 @@
 #include "chainman.h"
 
 #include "blockstorage/blockstorage.h"
+#include "chain/chainparams.h"
 #include "checkpoints.h"
 #include "consensus/consensus.h"
 #include "init.h"
@@ -13,7 +14,6 @@
 #include "main.h"
 #include "net/messages.h"
 #include "net/nodestate.h"
-#include "chain/chainparams.h"
 #include "processblock.h"
 #include "processheader.h"
 #include "txmempool.h"

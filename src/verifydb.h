@@ -8,8 +8,8 @@
 #ifndef VERIFYDB_H
 #define VERIFYDB_H
 
-#include "coins.h"
 #include "chain/chainparams.h"
+#include "coins.h"
 
 /** RAII wrapper for VerifyDB: Verify consistency of the block and coin databases */
 class CVerifyDB

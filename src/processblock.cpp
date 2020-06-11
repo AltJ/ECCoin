@@ -52,8 +52,7 @@ void UpdateTip(CBlockIndex *pindexNew)
     mempool.AddTransactionsUpdated(1);
 
     LogPrintf("%s: new best=%s  height=%d  log2_work=%.8g  tx=%lu  date=%s cache=%.1fMiB(%utx)\n", __func__,
-        g_chainman.chainActive.Tip()->GetBlockHash().ToString(),
-        g_chainman.chainActive.Height(),
+        g_chainman.chainActive.Tip()->GetBlockHash().ToString(), g_chainman.chainActive.Height(),
         log(g_chainman.chainActive.Tip()->nChainWork.getdouble()) / log(2.0),
         (unsigned long)(g_chainman.chainActive.Tip()->nChainTx),
         DateTimeStrFormat("%Y-%m-%d %H:%M:%S", g_chainman.chainActive.Tip()->GetBlockTime()),
@@ -125,10 +124,7 @@ bool DisconnectTip(CValidationState &state, const Consensus::Params &consensusPa
  * Connect a new block to chainActive. pblock is either NULL or a pointer to a CBlock
  * corresponding to pindexNew, to bypass loading it again from disk.
  */
-bool ConnectTip(CValidationState &state,
-    const CChainParams &chainparams,
-    CBlockIndex *pindexNew,
-    const CBlock *pblock)
+bool ConnectTip(CValidationState &state, const CChainParams &chainparams, CBlockIndex *pindexNew, const CBlock *pblock)
 {
     AssertLockHeld(cs_main);
     assert(pindexNew->pprev == g_chainman.chainActive.Tip());
@@ -162,8 +158,7 @@ bool ConnectTip(CValidationState &state,
         return false;
     // Remove conflicting transactions from the mempool.
     std::list<CTransactionRef> txConflicted;
-    mempool.removeForBlock(
-        pblock->vtx, pindexNew->nHeight, txConflicted, !g_chainman.IsInitialBlockDownload());
+    mempool.removeForBlock(pblock->vtx, pindexNew->nHeight, txConflicted, !g_chainman.IsInitialBlockDownload());
     // Update chainActive & related variables.
     UpdateTip(pindexNew);
 
@@ -216,8 +211,8 @@ void CheckForkWarningConditions()
 
     if (pindexBestForkTip ||
         (pindexBestInvalid &&
-            pindexBestInvalid.load()->nChainWork > g_chainman.chainActive.Tip()->nChainWork +
-                                                (GetBlockProof(*g_chainman.chainActive.Tip()) * 6)))
+            pindexBestInvalid.load()->nChainWork >
+                g_chainman.chainActive.Tip()->nChainWork + (GetBlockProof(*g_chainman.chainActive.Tip()) * 6)))
     {
         if (!fLargeWorkForkFound && pindexBestForkBase)
         {
@@ -359,8 +354,7 @@ bool ActivateBestChainStep(CValidationState &state,
                 BlockNotifyCallback(g_chainman.IsInitialBlockDownload(), pindexNewTip);
 
                 PruneBlockIndexCandidates();
-                if (!pindexOldTip ||
-                    g_chainman.chainActive.Tip()->nChainWork > pindexOldTip->nChainWork)
+                if (!pindexOldTip || g_chainman.chainActive.Tip()->nChainWork > pindexOldTip->nChainWork)
                 {
                     // We're in a better position than we were. Return temporarily to release the lock.
                     fContinue = false;
@@ -506,8 +500,7 @@ void CheckBlockIndex(const Consensus::Params &consensusParams)
 
     // Build forward-pointing map of the entire block tree.
     std::multimap<CBlockIndex *, CBlockIndex *> forward;
-    for (BlockMap::iterator it = g_chainman.mapBlockIndex.begin();
-         it != g_chainman.mapBlockIndex.end(); it++)
+    for (BlockMap::iterator it = g_chainman.mapBlockIndex.begin(); it != g_chainman.mapBlockIndex.end(); it++)
     {
         forward.insert(std::make_pair(it->second->pprev, it->second));
     }
@@ -607,8 +600,7 @@ void CheckBlockIndex(const Consensus::Params &consensusParams)
             // The failed mask cannot be set for blocks without invalid parents.
             assert((pindex->nStatus & BLOCK_FAILED_MASK) == 0);
         }
-        if (!CBlockIndexWorkComparator()(pindex, g_chainman.chainActive.Tip()) &&
-            pindexFirstNeverProcessed == NULL)
+        if (!CBlockIndexWorkComparator()(pindex, g_chainman.chainActive.Tip()) && pindexFirstNeverProcessed == NULL)
         {
             if (pindexFirstInvalid == NULL)
             {
@@ -1314,9 +1306,8 @@ bool AcceptBlock(const CBlock *pblock,
     // process an unrequested block if it's new and has enough work to
     // advance our tip, and isn't too many blocks ahead.
     bool fAlreadyHave = pindex->nStatus & BLOCK_HAVE_DATA;
-    bool fHasMoreWork = (g_chainman.chainActive.Tip() ?
-                             pindex->nChainWork > g_chainman.chainActive.Tip()->nChainWork :
-                             true);
+    bool fHasMoreWork =
+        (g_chainman.chainActive.Tip() ? pindex->nChainWork > g_chainman.chainActive.Tip()->nChainWork : true);
     // Blocks that are too out-of-order needlessly limit the effectiveness of
     // pruning, because pruning will not delete block files that contain any
     // blocks which are too close in height to the tip.  Apply this test
@@ -1351,8 +1342,7 @@ bool AcceptBlock(const CBlock *pblock,
     // Header is valid/has work, merkle tree and segwit merkle tree are
     // good...RELAY NOW (but if it does not build on our best tip, let the
     // SendMessages loop relay it)
-    if (!g_chainman.IsInitialBlockDownload() &&
-        g_chainman.chainActive.Tip() == pindex->pprev)
+    if (!g_chainman.IsInitialBlockDownload() && g_chainman.chainActive.Tip() == pindex->pprev)
     {
         GetMainSignals().NewPoWValidBlock(pindex, pblock);
     }
@@ -1393,8 +1383,7 @@ bool CheckBlock(const CBlock &block, CValidationState &state, bool fCheckPOW, bo
         return true;
     }
 
-    if (block.IsProofOfWork() && fCheckPOW &&
-        !CheckProofOfWork(block.GetHash(), block.nBits, Params().GetConsensus()))
+    if (block.IsProofOfWork() && fCheckPOW && !CheckProofOfWork(block.GetHash(), block.nBits, Params().GetConsensus()))
     {
         return state.DoS(50, error("CheckBlockHeader(): proof of work failed"), REJECT_INVALID, "high-hash");
     }

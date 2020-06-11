@@ -5,11 +5,11 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "args.h"
+#include "chain/chainparams.h"
 #include "clientversion.h"
 #include "httprpc.h"
 #include "httpserver.h"
 #include "init.h"
-#include "chain/chainparams.h"
 #include "rpc/rpcserver.h"
 #include "sync.h"
 #include "threadgroup.h"

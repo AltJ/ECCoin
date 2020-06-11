@@ -9,9 +9,9 @@
 
 #include "args.h"
 #include "base58.h"
+#include "chain/chainparams.h"
 #include "crypto/hmac_sha256.h"
 #include "httpserver.h"
-#include "chain/chainparams.h"
 #include "random.h"
 #include "rpc/rpcprotocol.h"
 #include "rpc/rpcserver.h"

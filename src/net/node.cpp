@@ -74,11 +74,11 @@ CNode::CNode(NodeId idIn,
 
     if (g_logger->fLogIPs)
     {
-        LogPrintf("Added connection to %s peer=%d\n", addrName, id);
+        LogPrint("net", "Added connection to %s peer=%d\n", addrName, id);
     }
     else
     {
-        LogPrintf("Added connection peer=%d\n", id);
+        LogPrint("net", "Added connection peer=%d\n", id);
     }
 }
 
@@ -329,7 +329,7 @@ int CNode::GetSendVersion() const
     // rather than using this value until SetSendVersion has been called.
     if (nSendVersion == 0)
     {
-        error("Requesting unset send version for node: %i. Using %i", id, MIN_PROTO_VERSION);
+        LogPrint("net", "Requesting unset send version for node: %i. Using %i", id, MIN_PROTO_VERSION);
         return MIN_PROTO_VERSION;
     }
     return nSendVersion;

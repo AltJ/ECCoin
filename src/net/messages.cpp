@@ -78,7 +78,7 @@ extern CCriticalSection cs_mapInboundConnectionTracker;
 extern std::map<CNetAddr, ConnectionHistory> mapInboundConnectionTracker;
 extern std::map<uint256, std::pair<CBlockHeader, int64_t> > mapUnConnectedHeaders;
 
-extern std::atomic<CBlockIndex*> pindexBestInvalid;
+extern std::atomic<CBlockIndex *> pindexBestInvalid;
 
 void RelayTransaction(const CTransaction &tx, CConnman &connman)
 {
@@ -225,8 +225,7 @@ void PeerLogicValidation::NewPoWValidBlock(CBlockIndex *pindex, const CBlock *pb
 {
     uint256 hashBlock(pblock->GetHash());
     RECURSIVEREADLOCK(g_chainman.cs_mapBlockIndex);
-    connman->ForEachNode([this, pindex, &hashBlock](CNode *pnode)
-    {
+    connman->ForEachNode([this, pindex, &hashBlock](CNode *pnode) {
         // TODO: Avoid the repeated-serialization here
         if (pnode->fDisconnect)
         {
@@ -239,7 +238,7 @@ void PeerLogicValidation::NewPoWValidBlock(CBlockIndex *pindex, const CBlock *pb
         // TODO : peer occasionally does not relay block headers because it incorrectly
         // thinks the peer has the header already, re-enable this at some point with better checks
 
-        //if (!g_requestman->PeerHasHeader(pnode->GetId(), pindex))
+        // if (!g_requestman->PeerHasHeader(pnode->GetId(), pindex))
         {
             LogPrint("net", "%s sending header-and-ids %s to peer=%d\n", "PeerLogicValidation::NewPoWValidBlock",
                 hashBlock.ToString(), pnode->id);
@@ -266,7 +265,7 @@ bool AlreadyHaveBlock(const CInv &inv)
 
 bool AlreadyHaveTx(const CInv &inv)
 {
-    if(inv.type == MSG_TX)
+    if (inv.type == MSG_TX)
     {
         assert(recentRejects);
         if (g_chainman.chainActive.Tip()->GetBlockHash() != hashRecentRejectsChainTip)
@@ -286,7 +285,10 @@ bool AlreadyHaveTx(const CInv &inv)
     return false;
 }
 
-void static ProcessGetData(CNode *pfrom, CConnman &connman, const Consensus::Params &consensusParams, std::deque<CInv> &vInv)
+void static ProcessGetData(CNode *pfrom,
+    CConnman &connman,
+    const Consensus::Params &consensusParams,
+    std::deque<CInv> &vInv)
 {
     std::vector<CInv> vNotFound;
 
@@ -319,13 +321,10 @@ void static ProcessGetData(CNode *pfrom, CConnman &connman, const Consensus::Par
                     // more than a month older (both in time, and in best
                     // equivalent proof of work) than the best header chain
                     // we know about.
-                    send =
-                        pindex->IsValid(BLOCK_VALID_SCRIPTS) &&
-                        (g_chainman.pindexBestHeader != nullptr) &&
-                        (g_chainman.pindexBestHeader.load()->GetBlockTime() - pindex->GetBlockTime() <
-                            nOneMonth) &&
-                        (GetBlockProofEquivalentTime(*g_chainman.pindexBestHeader, *pindex,
-                             *g_chainman.pindexBestHeader, consensusParams) < nOneMonth);
+                    send = pindex->IsValid(BLOCK_VALID_SCRIPTS) && (g_chainman.pindexBestHeader != nullptr) &&
+                           (g_chainman.pindexBestHeader.load()->GetBlockTime() - pindex->GetBlockTime() < nOneMonth) &&
+                           (GetBlockProofEquivalentTime(*g_chainman.pindexBestHeader, *pindex,
+                                *g_chainman.pindexBestHeader, consensusParams) < nOneMonth);
                     if (!send)
                     {
                         LogPrintf("%s: ignoring request from peer=%i for old block that isn't in the main chain\n",
@@ -340,8 +339,7 @@ void static ProcessGetData(CNode *pfrom, CConnman &connman, const Consensus::Par
             static const int nOneWeek = 7 * 24 * 60 * 60;
             if (send && connman.OutboundTargetReached(true) &&
                 (((g_chainman.pindexBestHeader != nullptr) &&
-                     (g_chainman.pindexBestHeader.load()->GetBlockTime() - pindex->GetBlockTime() >
-                         nOneWeek)) ||
+                     (g_chainman.pindexBestHeader.load()->GetBlockTime() - pindex->GetBlockTime() > nOneWeek)) ||
                     inv.type == MSG_FILTERED_BLOCK) &&
                 !pfrom->fWhitelisted)
             {
@@ -604,7 +602,7 @@ bool static ProcessMessage(CNode *pfrom,
                 else if (IsPeerAddrLocalGood(pfrom))
                 {
                     addr.SetIP(addrMe);
-                    LogPrintf("ProcessMessages: advertising address %s\n", addr.ToString());
+                    LogPrint("net", "ProcessMessages: advertising address %s\n", addr.ToString());
                     pfrom->PushAddress(addr, insecure_rand);
                 }
             }
@@ -624,7 +622,7 @@ bool static ProcessMessage(CNode *pfrom,
             remoteAddr = ", peeraddr=" + pfrom->addr.ToString();
         }
 
-        LogPrintf("receive version message: [%s] %s: version %d, blocks=%d, "
+        LogPrint("net", "receive version message: [%s] %s: version %d, blocks=%d, "
                   "us=%s, peer=%d%s\n",
             pfrom->addr.ToString().c_str(), cleanSubVer, pfrom->nVersion, pfrom->nStartingHeight, addrMe.ToString(),
             pfrom->id, remoteAddr);
@@ -809,10 +807,9 @@ bool static ProcessMessage(CNode *pfrom,
                     // getheaders response here. When we receive the headers, we
                     // will then ask for the blocks we need.
                     connman.PushMessage(pfrom, NetMsgType::GETHEADERS,
-                        g_chainman.chainActive.GetLocator(g_chainman.pindexBestHeader),
-                        inv.hash);
-                    LogPrint("net", "getheaders (%d) %s to peer=%d\n",
-                        g_chainman.pindexBestHeader.load()->nHeight, inv.hash.ToString(), pfrom->id);
+                        g_chainman.chainActive.GetLocator(g_chainman.pindexBestHeader), inv.hash);
+                    LogPrint("net", "getheaders (%d) %s to peer=%d\n", g_chainman.pindexBestHeader.load()->nHeight,
+                        inv.hash.ToString(), pfrom->id);
                 }
                 // TODO : putting a skip message here or something might help with debugging later
             }
@@ -826,8 +823,7 @@ bool static ProcessMessage(CNode *pfrom,
                     LogPrintf(
                         "transaction (%s) inv sent in violation of protocol peer=%d\n", inv.hash.ToString(), pfrom->id);
                 }
-                else if (!fAlreadyHave && !fImporting && !fReindex &&
-                         !g_chainman.IsInitialBlockDownload())
+                else if (!fAlreadyHave && !fImporting && !fReindex && !g_chainman.IsInitialBlockDownload())
                 {
                     pfrom->AskFor(inv);
                 }
@@ -883,7 +879,7 @@ bool static ProcessMessage(CNode *pfrom,
 
         if (g_chainman.IsInitialBlockDownload() && !pfrom->fWhitelisted)
         {
-            LogPrintf("Ignoring getheaders from peer=%d because our node is in initial block download\n", pfrom->id);
+            LogPrint("net", "Ignoring getheaders from peer=%d because our node is in initial block download\n", pfrom->id);
             return true;
         }
 
@@ -910,7 +906,7 @@ bool static ProcessMessage(CNode *pfrom,
             // we must use CBlocks, as CBlockHeaders won't include the 0x00 nTx
             // count at the end
             int nLimit = MAX_HEADERS_RESULTS;
-            LogPrintf("getheaders %d to %s from peer=%d\n", (pindex ? pindex->nHeight : -1),
+            LogPrint("net", "getheaders %d to %s from peer=%d\n", (pindex ? pindex->nHeight : -1),
                 hashStop.IsNull() ? "end" : hashStop.ToString(), pfrom->id);
             // TODO : evaluate if this cs_main lock is needed
             LOCK(cs_main);
@@ -1204,8 +1200,8 @@ bool static ProcessMessage(CNode *pfrom,
                 if (header.GetBlockTime() < GetAdjustedTime() - 24 * 60 * 60)
                 {
                     pfrom->fDisconnect = true;
-                    return error("non-continuous-headers sequence during node sync - disconnecting peer=%d",
-                        pfrom->GetId());
+                    return error(
+                        "non-continuous-headers sequence during node sync - disconnecting peer=%d", pfrom->GetId());
                 }
                 fNewUnconnectedHeaders = true;
             }
@@ -1231,7 +1227,8 @@ bool static ProcessMessage(CNode *pfrom,
             // TODO : there is probably a better way to fix this issue where sometimes the missing headers
             // never come in and we need to request them but dont, probably on the sending side, we should
             // make sure we are announcing all headers to the peer since the last one we sent
-            connman.PushMessage(pfrom, NetMsgType::GETHEADERS, g_chainman.chainActive.GetLocator(g_chainman.pindexBestHeader), uint256());
+            connman.PushMessage(pfrom, NetMsgType::GETHEADERS,
+                g_chainman.chainActive.GetLocator(g_chainman.pindexBestHeader), uint256());
             return true;
         }
         // If possible add any previously unconnected headers to the headers vector and remove any expired entries.
@@ -1314,7 +1311,8 @@ bool static ProcessMessage(CNode *pfrom,
             // from there instead.
             LogPrint("net", "more getheaders (%d) to end to peer=%d (startheight:%d)\n", pindexLast->nHeight,
                 pfrom->GetId(), pfrom->nStartingHeight);
-            connman.PushMessage(pfrom, NetMsgType::GETHEADERS, g_chainman.chainActive.GetLocator(pindexLast), uint256());
+            connman.PushMessage(
+                pfrom, NetMsgType::GETHEADERS, g_chainman.chainActive.GetLocator(pindexLast), uint256());
 
             g_requestman->SetPeerSyncStartTime(pfrom);
 
@@ -1330,9 +1328,8 @@ bool static ProcessMessage(CNode *pfrom,
                 {
                     // We only want one single header so we pass a null for CBlockLocator.
                     connman.PushMessageToId(node, NetMsgType::GETHEADERS, CBlockLocator(), pindexLast->GetBlockHash());
-                    LogPrint("net", "Requesting header for blockavailability, peer=%d block=%s height=%d\n",
-                        node, pindexLast->GetBlockHash().ToString().c_str(),
-                        g_chainman.pindexBestHeader.load()->nHeight);
+                    LogPrint("net", "Requesting header for blockavailability, peer=%d block=%s height=%d\n", node,
+                        pindexLast->GetBlockHash().ToString().c_str(), g_chainman.pindexBestHeader.load()->nHeight);
                 }
             }
         }
@@ -2142,7 +2139,7 @@ bool SendMessages(CNode *pto, CConnman &connman)
         // shorter delays.
         unsigned int nRelayedTransactions = 0;
         LOCK(pto->cs_inventory);
-        for (auto& entry : vInvToSend)
+        for (auto &entry : vInvToSend)
         {
             if (nRelayedTransactions < INVENTORY_BROADCAST_MAX)
             {

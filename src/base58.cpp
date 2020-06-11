@@ -274,15 +274,13 @@ bool CBitcoinAddress::GetKeyID(CKeyID &keyID) const
 
 bool CBitcoinAddress::IsScript() const
 {
-    return IsValid() &&
-           vchVersion == Params().Base58Prefix(CChainParams::SCRIPT_ADDRESS);
+    return IsValid() && vchVersion == Params().Base58Prefix(CChainParams::SCRIPT_ADDRESS);
 }
 
 void CBitcoinSecret::SetKey(const CKey &vchSecret)
 {
     assert(vchSecret.IsValid());
-    SetData(Params().Base58Prefix(CChainParams::SECRET_KEY), vchSecret.begin(),
-        vchSecret.size());
+    SetData(Params().Base58Prefix(CChainParams::SECRET_KEY), vchSecret.begin(), vchSecret.size());
     if (vchSecret.IsCompressed())
         vchData.push_back(1);
 }
