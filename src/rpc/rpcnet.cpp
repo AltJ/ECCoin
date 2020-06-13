@@ -453,6 +453,24 @@ UniValue getnetworkinfo(const UniValue &params, bool fHelp)
     if (g_connman)
     {
         obj.push_back(Pair("connections", (int)g_connman->GetNodeCount(CConnman::CONNECTIONS_ALL)));
+
+        std::vector<CNodeStats> vstats;
+        g_connman->GetNodeStats(vstats);
+        int inbound_count = 0;
+        int outbound_count = 0;
+        for (auto const &stats : vstats)
+        {
+            if(stats.fInbound)
+            {
+                ++inbound_count;
+            }
+            else
+            {
+                ++outbound_count;
+            }
+        }
+        obj.push_back(Pair("inbound_connections", inbound_count));
+        obj.push_back(Pair("outbound_connections", outbound_count));
     }
     obj.push_back(Pair("networks", GetNetworksInfo()));
     obj.push_back(Pair("relayfee", ValueFromAmount(::minRelayTxFee.GetFeePerK())));
