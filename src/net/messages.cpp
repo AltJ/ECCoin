@@ -739,6 +739,11 @@ bool static ProcessMessage(CNode *pfrom,
                 addr.nTime = nNow - 5 * 24 * 60 * 60;
             }
             pfrom->AddAddressKnown(addr);
+            // Do not process banned addresses beyond remembering we received them
+            if (g_dosman->IsBanned(addr))
+            {
+                continue;
+            }
             bool fReachable = IsReachable(addr);
             if (addr.nTime > nSince && !pfrom->fGetAddr && vAddr.size() <= 10 && addr.IsRoutable())
             {
@@ -1449,7 +1454,11 @@ bool static ProcessMessage(CNode *pfrom,
         FastRandomContext insecure_rand;
         for (const CAddress &addr : vAddr)
         {
-            pfrom->PushAddress(addr, insecure_rand);
+            // dont relay banned addresses
+            if (!g_dosman->IsBanned(addr))
+            {
+                pfrom->PushAddress(addr, insecure_rand);
+            }
         }
     }
 
