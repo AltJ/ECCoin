@@ -5,8 +5,8 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef ECCOIN_DOSMAN_H
-#define ECCOIN_DOSMAN_H
+#ifndef ECCOIN_NET_DOSMAN_H
+#define ECCOIN_NET_DOSMAN_H
 
 #include "addrdb.h"
 #include "connman.h"

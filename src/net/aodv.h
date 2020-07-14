@@ -4,8 +4,8 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef ECCOIN_AODV_TABLE_H
-#define ECCOIN_AODV_TABLE_H
+#ifndef ECCOIN_NET_AODV_H
+#define ECCOIN_NET_AODV_H
 
 #include <map>
 #include <utility>

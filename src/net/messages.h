@@ -5,8 +5,8 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef MESSAGES_H
-#define MESSAGES_H
+#ifndef ECCOIN_NET_MESSAGES_H
+#define ECCOIN_NET_MESSAGES_H
 
 #include "chain/blockindex.h"
 #include "net/net.h"

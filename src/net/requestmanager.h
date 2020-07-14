@@ -3,8 +3,8 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef ECCOIN_REQUESTMANAGER_H
-#define ECCOIN_REQUESTMANAGER_H
+#ifndef ECCOIN_NET_REQUESTMANAGER_H
+#define ECCOIN_NET_REQUESTMANAGER_H
 
 #include "net.h"
 #include "nodestate.h"

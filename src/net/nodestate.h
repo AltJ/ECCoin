@@ -6,8 +6,8 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef ECCOIN_NODESTATE_H
-#define ECCOIN_NODESTATE_H
+#ifndef ECCOIN_NET_NODESTATE_H
+#define ECCOIN_NET_NODESTATE_H
 
 #include "messages.h"
 #include "net.h"

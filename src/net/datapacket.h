@@ -3,8 +3,8 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef ECCOIN_DATA_PACKET_H
-#define ECCOIN_DATA_PACKET_H
+#ifndef ECCOIN_NET_DATAPACKET_H
+#define ECCOIN_NET_DATAPACKET_H
 
 #include "serialize.h"
 #include "uint256.h"

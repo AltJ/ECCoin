@@ -5,8 +5,8 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef ECCOIN_NODE_H
-#define ECCOIN_NODE_H
+#ifndef ECCOIN_NET_NODE_H
+#define ECCOIN_NET_NODE_H
 
 #include "bloom.h"
 #include "netmessage.h"

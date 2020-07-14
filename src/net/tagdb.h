@@ -5,8 +5,8 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef ECCOIN_TAGDB_H
-#define ECCOIN_TAGDB_H
+#ifndef ECCOIN_NET_TAGDB_H
+#define ECCOIN_NET_TAGDB_H
 
 #include "crypter.h"
 #include "key.h"

@@ -3,8 +3,8 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef ECCOIN_ROUTINGTAG_H
-#define ECCOIN_ROUTINGTAG_H
+#ifndef ECCOIN_NET_ROUTINGTAG_H
+#define ECCOIN_NET_ROUTINGTAG_H
 
 #include "key.h"
 #include "pubkey.h"

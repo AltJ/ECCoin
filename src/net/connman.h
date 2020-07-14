@@ -5,8 +5,8 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef ECCOIN_CONNMAN_H
-#define ECCOIN_CONNMAN_H
+#ifndef ECCOIN_NET_CONNMAN_H
+#define ECCOIN_NET_CONNMAN_H
 
 #include "addrman.h"
 #include "chain/chainparams.h"

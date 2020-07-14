@@ -3,8 +3,8 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef ECCOIN_PACKET_MANAGER_H
-#define ECCOIN_PACKET_MANAGER_H
+#ifndef ECCOIN_NET_PACKETMANAGER_H
+#define ECCOIN_NET_PACKETMANAGER_H
 
 #include <map>
 #include <utility>

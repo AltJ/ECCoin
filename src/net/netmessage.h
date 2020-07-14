@@ -5,8 +5,8 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef ECCOIN_NETMESSAGE_H
-#define ECCOIN_NETMESAGE_H
+#ifndef ECCOIN_NET_NETMESSAGE_H
+#define ECCOIN_NET_NETMESSAGE_H
 
 #include "crypto/hash.h"
 #include "protocol.h"

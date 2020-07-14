@@ -5,8 +5,8 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef ECCOIN_TAGSTORE_H
-#define ECCOIN_TAGSTORE_H
+#ifndef ECCOIN_NET_TAGSTORE_H
+#define ECCOIN_NET_TAGSTORE_H
 
 #include "routingtag.h"
 #include "tagdb.h"
