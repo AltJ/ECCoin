@@ -623,7 +623,7 @@ bool static ProcessMessage(CNode *pfrom,
         }
 
         LogPrint("net", "receive version message: [%s] %s: version %d, blocks=%d, "
-                  "us=%s, peer=%d%s\n",
+                        "us=%s, peer=%d%s\n",
             pfrom->addr.ToString().c_str(), cleanSubVer, pfrom->nVersion, pfrom->nStartingHeight, addrMe.ToString(),
             pfrom->id, remoteAddr);
 
@@ -884,7 +884,8 @@ bool static ProcessMessage(CNode *pfrom,
 
         if (g_chainman.IsInitialBlockDownload() && !pfrom->fWhitelisted)
         {
-            LogPrint("net", "Ignoring getheaders from peer=%d because our node is in initial block download\n", pfrom->id);
+            LogPrint(
+                "net", "Ignoring getheaders from peer=%d because our node is in initial block download\n", pfrom->id);
             return true;
         }
 

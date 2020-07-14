@@ -8,15 +8,12 @@
 image: ubuntu:18.04
 
 stages:
+    - static_checks
     - build_depends
     - build
     - build_tests
     - qa_tests
     - benchmark_tests
-
-variables:
-    # Don't allow tests to hang
-    TRAVIS: 1
 
 cache: &global_cache_settings
     paths:
@@ -30,6 +27,27 @@ cache: &global_cache_settings
         - export CCACHE_DIR=${PWD}/ccache
         - export CCACHE_COMPILERCHECK=content
         - ccache --zero-stats || true
+
+.cache-linting:
+    extends: .ccache_scripts
+    cache:
+        <<: *global_cache_settings
+        key: linting_cache
+
+# Check formatting
+check-formatting:
+    stage: static_checks
+    extends: .cache-linting
+    needs: []
+    script:
+        - set -o errexit; source .gitlab-ci/install.sh
+        - export LINTER_DEB_URL=https://www.bitcoinunlimited.info/depends-sources/
+        - curl --location $LINTER_DEB_URL/libllvm3.8_3.8.1-27ubuntu1_amd64.deb -o llvm-3.8.deb;
+        - curl --location $LINTER_DEB_URL/clang-format-3.8_3.8.1-27ubuntu1_amd64.deb -o clang-format-3.8.deb;
+        - dpkg -i llvm-3.8.deb clang-format-3.8.deb;
+        - ./autogen.sh
+        - ./configure --with-incompatible-bdb --enable-glibc-back-compat --enable-reduce-exports
+        - make check-formatting
 
 #x86_64 Linux + deps as via system lib
 .cache-debian-nodeps:
@@ -364,4 +382,38 @@ build-win-32:
             - ccache/
             - depends/sources
             - depends/built
-            - depends/x86_64-apple-darwin14
+            - depends/x86_64-apple-darwin11
+
+build-osx-depends:
+    stage: build_depends
+    extends: .cache-osx
+    script:
+        - apt-get update
+        - apt-get install -y cmake imagemagick libcap-dev librsvg2-bin libz-dev libbz2-dev libtiff-tools python-dev python3-setuptools-git clang clang-tools
+        - mkdir -p depends/sdk-sources; mkdir depends/SDKs
+        - curl --location --fail https://www.bitcoinunlimited.info/sdks/MacOSX10.11.sdk.tar.gz -o ./depends/sdk-sources/MacOSX10.11.sdk.tar.gz
+        - tar -C depends/SDKs -xf depends/sdk-sources/MacOSX10.11.sdk.tar.gz
+        - cd depends
+        - make HOST=x86_64-apple-darwin11 JOBS=`nproc`
+    artifacts:
+        paths:
+            - depends
+
+
+build-osx:
+    stage: build
+    extends: .cache-osx
+    needs: ["build-osx-depends"]
+    script:
+        - apt-get install -y cmake imagemagick libcap-dev librsvg2-bin libz-dev libbz2-dev libtiff-tools python-dev python3-setuptools-git clang clang-tools
+        - ./autogen.sh
+        - mkdir build; cd build
+        - ../configure --enable-reduce-exports CXX=/usr/bin/clang++ CC=/usr/bin/clang --prefix=$PWD/../depends/x86_64-apple-darwin11
+        - make -j `nproc`
+        - ccache --show-stats
+    dependencies:
+        - build-osx-depends
+    artifacts:
+        when: on_failure
+        paths:
+            - build/config.log
