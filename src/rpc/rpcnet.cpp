@@ -460,7 +460,7 @@ UniValue getnetworkinfo(const UniValue &params, bool fHelp)
         int outbound_count = 0;
         for (auto const &stats : vstats)
         {
-            if(stats.fInbound)
+            if (stats.fInbound)
             {
                 ++inbound_count;
             }

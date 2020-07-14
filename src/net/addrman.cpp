@@ -198,7 +198,6 @@ void CAddrMan::Delete(CAddrInfo _info)
         LogPrint("net", "removed address %s from addrman \n", pinfo->ToString());
         mapAddr.erase(info);
         mapInfo.erase(nId);
-
     }
 }
 
