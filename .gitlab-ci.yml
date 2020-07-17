@@ -88,34 +88,49 @@ build-debian-tests-nodeps:
     cache:
         <<: *global_cache_settings
         key: debian_cache
+        paths:
+            - ccache/
+            - depends/sources
+            - depends/built
+            - depends/x86_64-unknown-linux-gnu
 
-build-debian:
-    stage: build
+build-debian-deps:
+    stage: build_depends
     extends: .cache-debian
     needs: []
     script:
         - cd depends
-        - make HOST=x86_64-unknown-linux-gnu -j4
-        - cd ..
-        - ./autogen.sh
-        - CONFIG_SITE=$PWD/depends/x86_64-unknown-linux-gnu/share/config.site ./configure --prefix=/
-        - make -j4
-        - ccache --show-stats
-
+        - make HOST=x86_64-unknown-linux-gnu -j `nproc`
     artifacts:
         paths:
-            - ccache/*
-            - ./*
-            - ./src/eccoind
-            - ./src/test/test_bitcoin
-            - ./src/bench/bench_bitcoin
+            - depends/x86_64-unknown-linux-gnu
+
+build-debian:
+    stage: build
+    extends: .cache-debian
+    needs: [build-debian-deps]
+    script:
+        - ./autogen.sh
+        - mkdir build; cd build
+        - ../configure --prefix=$PWD/../depends/x86_64-unknown-linux-gnu --enable-shared --enable-debug --enable-zmq --enable-glibc-back-compat --enable-reduce-exports --cache-file=config.cache
+        - make -j `nproc`
+        - ccache --show-stats
+    dependencies:
+        - build-debian-deps
+    artifacts:
+        paths:
+            - ./build/src/eccoind
+            - ./build/src/test/test_bitcoin
+            - ./build/src/bench/bench_bitcoin
+            - ./build/qa/*
+            - ./qa/*
 
 build-debian-tests:
     stage: build_tests
     extends: .cache-debian
     needs: ["build-debian"]
     script:
-        - (cd src; ./test/test_bitcoin)
+        - (cd build/src; ./test/test_bitcoin)
     dependencies:
         - build-debian
 
@@ -125,6 +140,7 @@ test-debian-qa:
     needs: ["build-debian"]
     script:
         - apt-get install -y python3-zmq
+        - cd build; ls -l ./qa/pull-tester/rpc-tests.py;
         - ./qa/pull-tester/rpc-tests.py --coverage --no-ipv6-rpc-listen
     dependencies:
         - build-debian
@@ -134,7 +150,7 @@ test-debian-benchmarks:
     extends: .cache-debian
     needs: ["build-debian"]
     script:
-        - (./src/bench/bench_bitcoin -evals=1)
+        - (build/src/bench/bench_bitcoin -evals=1)
     dependencies:
         - build-debian
 
@@ -369,8 +385,74 @@ build-win-32:
     dependencies:
         - build-win-32-depends
 
-#Linux32-bit + dash
+#Linux32-bit
+.cache-debian-32:
+    extends: .ccache_scripts
+    cache:
+        <<: *global_cache_settings
+        key: debian_cache-32
+        paths:
+            - ccache/
+            - depends/sources
+            - depends/built
+            - depends/i686-pc-linux-gnu
 
+build-debian-32-depends:
+    stage: build_depends
+    extends: .cache-debian-32
+    script:
+        - dpkg --add-architecture i386
+        - apt-get update
+        - apt-get install -y python3 g++-multilib bc python3-zmq
+        - cd depends
+        - make HOST=i686-pc-linux-gnu -j `nproc`
+    artifacts:
+        paths:
+            - depends/i686-pc-linux-gnu
+
+build-debian-32:
+    stage: build
+    extends: .cache-debian-32
+    needs: ["build-debian-32-depends"]
+    script:
+        - dpkg --add-architecture i386
+        - apt-get update
+        - apt-get install -y python3 g++-multilib bc python3-zmq
+        - ./autogen.sh
+        - mkdir build; cd build
+        - ../configure --prefix=/$PWD/../depends/i686-pc-linux-gnu  --enable-zmq --enable-glibc-back-compat --enable-reduce-exports LDFLAGS=-static-libstdc++
+        - make -j `nproc`
+        - ccache --show-stats
+    dependencies:
+        - build-debian-32-depends
+    artifacts:
+        paths:
+            - ./build/src/eccoind
+            - ./build/src/test/test_bitcoin
+            - ./build/src/bench/bench_bitcoin
+            - ./build/qa/*
+            - ./qa/*
+
+# debian 32 is not able to execute the test or qa files even though it is able to find
+# skip these tests for now
+#build-debian-tests-32:
+#    stage: build_tests
+#    extends: .cache-debian-32
+#    needs: ["build-debian-32"]
+#    script:
+#        - cd build/src; pwd; ls -la test/test_bitcoin; test/test_bitcoin
+#    dependencies:
+#        - build-debian-32
+#
+#test-debian-qa-32:
+#    stage: qa_tests
+#    extends: .cache-debian-32
+#    needs: ["build-debian-32"]
+#    script:
+#        - apt-get install -y python3 python3-zmq
+#        - cd build; pwd; ls -la qa/pull-tester/rpc-tests.py; ./qa/pull-tester/rpc-tests.py --coverage --no-ipv6-rpc-listen
+#    dependencies:
+#        - build-debian-32
 
 #Cross-Mac
 .cache-osx:
