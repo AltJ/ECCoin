@@ -129,7 +129,6 @@ pubkey.cpp
 pubkey.h
 random.cpp
 random.h
-reverselock.h
 rpc/events.h
 rpc/rpcblockchain.cpp
 rpc/rpcclient.cpp
@@ -248,7 +247,6 @@ test/net_tests.cpp
 test/pmt_tests.cpp
 test/policyestimator_tests.cpp
 test/prevector_tests.cpp
-test/reverselock_tests.cpp
 test/rpc_tests.cpp
 test/sanity_tests.cpp
 test/scriptnum10.h
