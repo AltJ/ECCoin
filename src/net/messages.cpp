@@ -450,7 +450,6 @@ bool static ProcessMessage(CNode *pfrom,
     CConnman &connman)
 {
     const CChainParams &chainparams = Params();
-    RandAddSeedPerfmon();
     LogPrint("net", "received: %s (%u bytes) peer=%d\n", SanitizeString(strCommand), vRecv.size(), pfrom->id);
     if (gArgs.IsArgSet("-dropmessagestest") && GetRand(atoi(gArgs.GetArg("-dropmessagestest", "0"))) == 0)
     {
@@ -1931,7 +1930,7 @@ bool SendMessages(CNode *pto, CConnman &connman)
         uint64_t nonce = 0;
         while (nonce == 0)
         {
-            GetRandBytes((uint8_t *)&nonce, sizeof(nonce));
+            GetStrongRandBytes((uint8_t *)&nonce, sizeof(nonce));
         }
         pto->fPingQueued = false;
         pto->nPingUsecStart = GetTimeMicros();

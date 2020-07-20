@@ -45,7 +45,7 @@ private:
 
 
 public:
-    CSignatureCache() { GetRandBytes(nonce.begin(), 32); }
+    CSignatureCache() { GetStrongRandBytes(nonce.begin(), 32); }
     void ComputeEntry(uint256 &entry,
         const uint256 &hash,
         const std::vector<unsigned char> &vchSig,

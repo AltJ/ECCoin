@@ -145,10 +145,9 @@ static int ec_privkey_export_der(const secp256k1_context *ctx,
 bool CKey::Check(const unsigned char *vch) { return secp256k1_ec_seckey_verify(secp256k1_context_sign, vch); }
 void CKey::MakeNewKey(bool fCompressedIn)
 {
-    RandAddSeedPerfmon();
     do
     {
-        GetRandBytes(vch, sizeof(vch));
+        GetStrongRandBytes(vch, sizeof(vch));
     } while (!Check(vch));
     fValid = true;
     fCompressed = fCompressedIn;
@@ -336,7 +335,7 @@ bool CKey::VerifyPubKey(const CPubKey &pubkey) const
     }
     unsigned char rnd[8];
     std::string str = "Bitcoin key verification\n";
-    GetRandBytes(rnd, sizeof(rnd));
+    GetStrongRandBytes(rnd, sizeof(rnd));
     uint256 hash;
     CHash256().Write((unsigned char *)str.data(), str.size()).Write(rnd, sizeof(rnd)).Finalize(hash.begin());
     std::vector<unsigned char> vchSig;
@@ -355,7 +354,7 @@ void ECC_Start()
         // Pass in a random blinding seed to the secp256k1 context.
         uint8_t seed[32] = {0};
         LockObject(seed);
-        GetRandBytes(seed, 32);
+        GetStrongRandBytes(seed, 32);
         bool ret = secp256k1_context_randomize(ctx, seed);
         assert(ret);
     }

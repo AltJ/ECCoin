@@ -34,12 +34,16 @@
 
 #include <memory>
 
+uint256 insecure_rand_seed = GetRandHash();
+FastRandomContext insecure_rand_ctx(insecure_rand_seed);
+
 CWallet *pwallet = nullptr;
 
 BasicTestingSetup::BasicTestingSetup(const std::string &chainName)
 {
-    ECC_Start();
     SetupEnvironment();
+    RandomInit();
+    ECC_Start();
     SetupNetworking();
     g_logger->fPrintToDebugLog = false; // don't want to write to debug.log file
     fCheckBlockIndex = true;

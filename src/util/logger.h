@@ -12,7 +12,7 @@
 #include "tinyformat.h"
 
 #include <list>
-#include <mutex>
+#include <memory>
 #include <mutex>
 
 static const bool DEFAULT_LOGTIMEMICROS = false;

@@ -77,7 +77,7 @@ BOOST_AUTO_TEST_CASE(merkle_test)
     for (int i = 0; i < 32; i++)
     {
         // Try 32 block sizes: all sizes from 0 to 16 inclusive, and then 15 random sizes.
-        int ntx = (i <= 16) ? i : 17 + (insecure_rand() % 4000);
+        int ntx = (i <= 16) ? i : 17 + InsecureRandRange(4000);
         // Try up to 3 mutations.
         for (int mutate = 0; mutate <= 3; mutate++)
         {
@@ -143,7 +143,7 @@ BOOST_AUTO_TEST_CASE(merkle_test)
                     int mtx = loop;
                     if (ntx > 16)
                     {
-                        mtx = insecure_rand() % ntx;
+                        mtx = InsecureRandRange(ntx);
                     }
                     std::vector<uint256> newBranch = BlockMerkleBranch(block, mtx);
                     std::vector<uint256> oldBranch = BlockGetMerkleBranch(block, merkleTree, mtx);
