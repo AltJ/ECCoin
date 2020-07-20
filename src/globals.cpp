@@ -24,6 +24,7 @@ LockData lockdata;
 /**
  * Global state
  */
+ std::unique_ptr<CLogger> g_logger;
 
 CCriticalSection cs_main;
 CCriticalSection cs_orphans;
