@@ -16,7 +16,6 @@
 
 #include <boost/thread/tss.hpp>
 
-std::unique_ptr<CLogger> g_logger;
 volatile bool fReopenDebugLog = false;
 
 /**
