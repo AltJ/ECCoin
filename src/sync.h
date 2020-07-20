@@ -16,13 +16,8 @@
 #include "util/util.h"
 #include "util/utiltime.h"
 
-#include <boost/thread/condition_variable.hpp>
-#include <boost/thread/locks.hpp>
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/recursive_mutex.hpp>
+// TODO : in c++17 replace boost::shared_mutex with std::shared_mutex
 #include <boost/thread/shared_mutex.hpp>
-#include <boost/thread/thread.hpp>
-#include <boost/thread/tss.hpp> // for boost::thread_specific_ptr
 
 #include <mutex>
 #include <shared_mutex>
@@ -46,10 +41,10 @@ public:
  * Wrapped boost mutex: supports recursive locking, but no waiting
  */
 #ifndef DEBUG_LOCKORDER
-typedef AnnotatedMixin<boost::recursive_mutex> CCriticalSection;
+typedef AnnotatedMixin<std::recursive_mutex> CCriticalSection;
 #define CRITSEC(x) CCriticalSection x
 #else // BU we need to remove the critical section from the lockorder map when destructed
-class CCriticalSection : public AnnotatedMixin<boost::recursive_mutex>
+class CCriticalSection : public AnnotatedMixin<std::recursive_mutex>
 {
 public:
     const char *name;
@@ -171,10 +166,10 @@ public:
 /** Wrapped boost mutex: supports waiting but not recursive locking */
 typedef AnnotatedMixin<std::mutex> CWaitableCriticalSection;
 
-/** Just a typedef for boost::condition_variable, can be wrapped later if desired */
+/** Just a typedef for std::condition_variable, can be wrapped later if desired */
 typedef std::condition_variable CConditionVariable;
 
-/** Just a typedef for boost::condition_variable_any, can be wrapped later if desired -- c++11 version missing on win */
+/** Just a typedef for std::condition_variable_any, can be wrapped later if desired -- c++11 version missing on win */
 typedef std::condition_variable_any CCond;
 
 #ifdef DEBUG_LOCKORDER
@@ -430,7 +425,7 @@ public:
         assert(pszName != nullptr);
         // we no longer allow naming critical sections cs, please name it something more meaningful
         assert(std::string(pszName) != "cs");
-        lock = boost::shared_lock<Mutex>(*pmutexIn, boost::defer_lock);
+        lock = std::shared_lock<Mutex>(*pmutexIn, std::defer_lock);
         if (fTry)
             TryEnter(pszName, pszFile, nLine, type);
         else
@@ -503,15 +498,15 @@ typedef CMutexLock<CCriticalSection> CCriticalBlock;
 class CSemaphore
 {
 private:
-    boost::condition_variable condition;
-    boost::mutex mutex;
+    std::condition_variable condition;
+    std::mutex mutex;
     int value;
 
 public:
     CSemaphore(int init) : value(init) {}
     void wait()
     {
-        boost::unique_lock<boost::mutex> lock(mutex);
+        std::unique_lock<std::mutex> lock(mutex);
         while (value < 1)
         {
             condition.wait(lock);
@@ -521,7 +516,7 @@ public:
 
     bool try_wait()
     {
-        boost::unique_lock<boost::mutex> lock(mutex);
+        std::unique_lock<std::mutex> lock(mutex);
         if (value < 1)
             return false;
         value--;
@@ -531,7 +526,7 @@ public:
     void post()
     {
         {
-            boost::unique_lock<boost::mutex> lock(mutex);
+            std::unique_lock<std::mutex> lock(mutex);
             value++;
         }
         condition.notify_one();
