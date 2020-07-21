@@ -24,7 +24,7 @@ bool CBanDB::Write(const banmap_t &banSet)
 {
     // Generate random temporary filename
     unsigned short randv = 0;
-    GetRandBytes((uint8_t *)&randv, sizeof(randv));
+    GetStrongRandBytes((uint8_t *)&randv, sizeof(randv));
     std::string tmpfn = strprintf("banlist.dat.%04x", randv);
 
     // serialize banlist, checksum data up to that point, then append csum
@@ -125,7 +125,7 @@ bool CAddrDB::Write(const CAddrMan &addr)
 {
     // Generate random temporary filename
     unsigned short randv = 0;
-    GetRandBytes((uint8_t *)&randv, sizeof(randv));
+    GetStrongRandBytes((uint8_t *)&randv, sizeof(randv));
     std::string tmpfn = strprintf("peers.dat.%04x", randv);
 
     // serialize addresses, checksum data up to that point, then append csum

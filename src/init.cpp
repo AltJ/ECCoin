@@ -1134,6 +1134,10 @@ bool AppInit2(thread_group &threadGroup)
     // daemonize, pidfile, debug log
 
     // Initialize elliptic curve code
+    // TODO : port the improved sha256 libs from upstream
+    // std::string sha256_algo = SHA256AutoDetect();
+    RandomInit();
+    // LogPrintf("Using the '%s' SHA256 implementation\n", sha256_algo);
     ECC_Start();
     globalVerifyHandle.reset(new ECCVerifyHandle());
 
@@ -1614,8 +1618,6 @@ bool AppInit2(thread_group &threadGroup)
 
     if (!strErrors.str().empty())
         return InitError(strErrors.str());
-
-    RandAddSeedPerfmon();
 
     //// debug print
     LogPrintf("mapBlockIndex.size() = %u\n", g_chainman.mapBlockIndex.size());

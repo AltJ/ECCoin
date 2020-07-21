@@ -91,7 +91,7 @@ bool CRoutingTag::VerifyPubKey(const CPubKey &pubkey) const
     }
     unsigned char rnd[8];
     std::string str = "Bitcoin key verification\n";
-    GetRandBytes(rnd, sizeof(rnd));
+    GetStrongRandBytes(rnd, sizeof(rnd));
     uint256 hash;
     CHash256().Write((unsigned char *)str.data(), str.size()).Write(rnd, sizeof(rnd)).Finalize(hash.begin());
     std::vector<unsigned char> vchSig;

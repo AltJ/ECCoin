@@ -172,7 +172,7 @@ UniValue findroute(const UniValue &params, bool fHelp)
         return NullUniValue;
     }
     uint64_t nonce = 0;
-    GetRandBytes((uint8_t *)&nonce, sizeof(nonce));
+    GetStrongRandBytes((uint8_t *)&nonce, sizeof(nonce));
     CPubKey key;
     RequestRouteToPeer(g_connman.get(), key, nonce, CPubKey(vPubKey.begin(), vPubKey.end()));
     LogPrintf("done sending route requests \n");

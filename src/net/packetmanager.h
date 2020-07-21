@@ -130,7 +130,7 @@ public:
         uint64_t nonce = 0;
         while (nonce == 0)
         {
-            GetRandBytes((uint8_t *)&nonce, sizeof(nonce));
+            GetStrongRandBytes((uint8_t *)&nonce, sizeof(nonce));
         }
         std::vector<CPacketDataSegment> segments = newPacket.GetSegments();
         {

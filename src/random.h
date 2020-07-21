@@ -1,81 +1,47 @@
-// This file is part of the Eccoin project
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2016 The Bitcoin Core developers
-// Copyright (c) 2014-2018 The Eccoin developers
+// Copyright (c) 2009-2014 The Bitcoin Core developers
+// Copyright (c) 2015-2018 The Bitcoin Unlimited developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #ifndef BITCOIN_RANDOM_H
 #define BITCOIN_RANDOM_H
 
+#include "crypto/chacha20.h"
+#include "crypto/common.h"
 #include "uint256.h"
 
-#include "crypto/chacha20.h"
+#include <limits>
 #include <stdint.h>
 
-uint64_t static inline CountBits(uint64_t x)
-{
-#ifdef HAVE_DECL___BUILTIN_CLZL
-    if (sizeof(unsigned long) >= sizeof(uint64_t))
-    {
-        return x ? 8 * sizeof(unsigned long) - __builtin_clzl(x) : 0;
-    }
-#endif
-#ifdef HAVE_DECL___BUILTIN_CLZLL
-    if (sizeof(unsigned long long) >= sizeof(uint64_t))
-    {
-        return x ? 8 * sizeof(unsigned long long) - __builtin_clzll(x) : 0;
-    }
-#endif
-    int ret = 0;
-    while (x)
-    {
-        x >>= 1;
-        ++ret;
-    }
-    return ret;
-}
-
-
-/**
- * Seed OpenSSL PRNG with additional entropy data
- */
+/* Seed OpenSSL PRNG with additional entropy data */
 void RandAddSeed();
-void RandAddSeedPerfmon();
 
 /**
  * Functions to gather random data via the OpenSSL PRNG
  */
-void GetRandBytes(unsigned char *buf, int num);
+// void GetRandBytes(unsigned char *buf, int num);
 uint64_t GetRand(uint64_t nMax);
 int GetRandInt(int nMax);
 uint256 GetRandHash();
 
 /**
- * Seed insecure_rand using the random pool.
- * @param Deterministic Use a deterministic seed
+ * Add a little bit of randomness to the output of GetStrongRangBytes.
+ * This sleeps for a millisecond, so should only be called when there is
+ * no other work to be done.
  */
-void seed_insecure_rand(bool fDeterministic = false);
+void RandAddSeedSleep();
+
 
 /**
- * MWC RNG of George Marsaglia
- * This is intended to be fast. It has a period of 2^59.3, though the
- * least significant 16 bits only have a period of about 2^30.1.
- *
- * @return random value
+ * Function to gather random data from multiple sources, failing whenever any
+ * of those source fail to provide a result.
  */
-extern uint32_t insecure_rand_Rz;
-extern uint32_t insecure_rand_Rw;
-static inline uint32_t insecure_rand(void)
-{
-    insecure_rand_Rz = 36969 * (insecure_rand_Rz & 65535) + (insecure_rand_Rz >> 16);
-    insecure_rand_Rw = 18000 * (insecure_rand_Rw & 65535) + (insecure_rand_Rw >> 16);
-    return (insecure_rand_Rw << 16) + insecure_rand_Rz;
-}
+void GetStrongRandBytes(unsigned char *buf, int num);
 
 /**
- * Fast randomness source. This is seeded once with secure random data, but is
- * completely deterministic and insecure after that.
+ * Fast randomness source. This is seeded once with secure random data, but
+ * is completely deterministic and insecure after that.
  * This class is not thread-safe.
  */
 class FastRandomContext
@@ -84,7 +50,7 @@ private:
     bool requires_seed;
     ChaCha20 rng;
 
-    uint8_t bytebuf[64];
+    unsigned char bytebuf[64];
     int bytebuf_size;
 
     uint64_t bitbuf;
@@ -118,9 +84,7 @@ public:
     uint64_t rand64()
     {
         if (bytebuf_size < 8)
-        {
             FillByteBuffer();
-        }
         uint64_t ret = ReadLE64(bytebuf + 64 - bytebuf_size);
         bytebuf_size -= 8;
         return ret;
@@ -140,9 +104,7 @@ public:
         else
         {
             if (bitbuf_size < bits)
-            {
                 FillBitBuffer();
-            }
             uint64_t ret = bitbuf & (~uint64_t(0) >> (64 - bits));
             bitbuf >>= bits;
             bitbuf_size -= bits;
@@ -159,37 +121,70 @@ public:
         {
             uint64_t ret = randbits(bits);
             if (ret <= range)
-            {
                 return ret;
-            }
         }
     }
 
+    /** Generate random bytes. */
+    std::vector<unsigned char> randbytes(size_t len);
+
     /** Generate a random 32-bit integer. */
     uint32_t rand32() { return randbits(32); }
+    /** generate a random uint256. */
+    uint256 rand256();
+
     /** Generate a random boolean. */
     bool randbool() { return randbits(1); }
+    // Compatibility with the C++11 UniformRandomBitGenerator concept
+    typedef uint64_t result_type;
+    static constexpr uint64_t min() { return 0; }
+    static constexpr uint64_t max() { return std::numeric_limits<uint64_t>::max(); }
+    inline uint64_t operator()() { return rand64(); }
 };
 
-/**
- * Number of random bytes returned by GetOSRand.
- * When changing this constant make sure to change all call sites, and make sure
- * that the underlying OS APIs for all platforms support the number (many cap
- * out at 256 bytes).
+/** More efficient than using std::shuffle on a FastRandomContext.
+ *
+ * This is more efficient as std::shuffle will consume entropy in groups of
+ * 64 bits at the time and throw away most.
+ *
+ * This also works around a bug in libstdc++ std::shuffle that may cause
+ * type::operator=(type&&) to be invoked on itself, which the library's
+ * debug mode detects and panics on. This is a known issue, see
+ * https://stackoverflow.com/questions/22915325/avoiding-self-assignment-in-stdshuffle
  */
-static const ssize_t NUM_OS_RANDOM_BYTES = 32;
+template <typename I, typename R>
+void Shuffle(I first, I last, R &&rng)
+{
+    while (first != last)
+    {
+        size_t j = rng.randrange(last - first);
+        if (j)
+        {
+            using std::swap;
+            swap(*first, *(first + j));
+        }
+        ++first;
+    }
+}
 
-/**
- * Get 32 bytes of system entropy. Do not use this in application code: use
+/* Number of random bytes returned by GetOSRand.
+ * When changing this constant make sure to change all call sites, and make
+ * sure that the underlying OS APIs for all platforms support the number.
+ * (many cap out at 256 bytes).
+ */
+static const int NUM_OS_RANDOM_BYTES = 32;
+
+/** Get 32 bytes of system entropy. Do not use this in application code: use
  * GetStrongRandBytes instead.
  */
 void GetOSRand(unsigned char *ent32);
 
-/**
- * Check that OS randomness is available and returning the requested number of
- * bytes.
+/** Check that OS randomness is available and returning the requested number
+ * of bytes.
  */
 bool Random_SanityCheck();
 
+/** Initialize the RNG. */
+void RandomInit();
 
 #endif // BITCOIN_RANDOM_H

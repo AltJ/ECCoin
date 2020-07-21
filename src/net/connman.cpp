@@ -2038,7 +2038,7 @@ void CConnman::PushNodeVersion(CNode *pnode, int64_t nTime)
     CAddress addrYou = (addr.IsRoutable() && !IsProxy(addr) ? addr : CAddress(CService(), addr.nServices));
     CAddress addrMe = CAddress(CService(), nLocalNodeServices);
 
-    GetRandBytes((unsigned char *)&nLocalHostNonce, sizeof(nLocalHostNonce));
+    GetStrongRandBytes((unsigned char *)&nLocalHostNonce, sizeof(nLocalHostNonce));
 
     PushMessage(pnode, NetMsgType::VERSION, PROTOCOL_VERSION, (uint64_t)nLocalNodeServices, nTime, addrYou,
         addrMe, nLocalHostNonce, strSubVersion, nNodeStartingHeight, ::fRelayTxes);
