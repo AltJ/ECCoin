@@ -55,6 +55,25 @@ class SendPacketTest (BitcoinTestFramework):
         key4 = self.nodes[4].getroutingpubkey()
         key5 = self.nodes[5].getroutingpubkey()
         self.nodes[0].findroute(key5)
+
+        bufferCount_key0 = 0
+        pubkey0 = self.nodes[0].registerbuffer(0)
+
+        bufferCount_key1 = 0
+        pubkey1 = self.nodes[1].registerbuffer(0)
+
+        bufferCount_key2 = 0
+        pubkey2 = self.nodes[2].registerbuffer(0)
+
+        bufferCount_key3 = 0
+        pubkey3 = self.nodes[3].registerbuffer(0)
+
+        bufferCount_key4 = 0
+        pubkey4 = self.nodes[4].registerbuffer(0)
+
+        bufferCount_key5 = 0
+        pubkey5 = self.nodes[5].registerbuffer(0)
+
         time.sleep(1)
         assert_equal(self.nodes[0].haveroute(key5), True)
         time.sleep(1)
@@ -67,7 +86,10 @@ class SendPacketTest (BitcoinTestFramework):
         sent = self.nodes[0].sendpacket(key5, 0, 0, "test string3")
         time.sleep(1)
         assert_equal(sent, True)
-        buffer = self.nodes[5].getbuffer(0)
+        msg = "GetBufferRequest:" + "0" + str((bufferCount_key5 + 1))
+        sig = self.nodes[5].buffersignmessage(pubkey5, msg)
+        buffer = self.nodes[5].getbuffer(0, sig)
+        assert_equal(len(buffer), 3)
         assert_equal(buffer['0'], "7465737420737472696e6731")
         assert_equal(buffer['1'], "7465737420737472696e6732")
         assert_equal(buffer['2'], "7465737420737472696e6733")
