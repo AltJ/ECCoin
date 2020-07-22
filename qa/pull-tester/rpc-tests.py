@@ -191,7 +191,7 @@ testScripts = [ RpcTest(t) for t in [
     Disabled('nodehandling', "Banning peers temporarily not working"),
     'notify',
     'proxy_test',
-    'receivedby',
+    Disabled('receivedby','temporary'),
     'reindex',
     #'sendheaders', #rpc missing
     'sendpacket',

@@ -1,11 +1,13 @@
-// This file is part of the Eccoin project
-// Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2016 The Bitcoin Core developers
-// Copyright (c) 2014-2018 The Eccoin developers
+// Copyright (c) 2009-2015 The Bitcoin Core developers
+// Copyright (c) 2015-2017 The Bitcoin Unlimited developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "support/pagelocker.h"
+
+#if defined(HAVE_CONFIG_H)
+#include "config/bitcoin-config.h"
+#endif
 
 #ifdef WIN32
 #ifdef _WIN32_WINNT
@@ -17,7 +19,6 @@
 #define NOMINMAX
 #endif
 #include <windows.h>
-#include <winsock2.h>
 // This is used to attempt to keep keying material out of swap
 // Note that VirtualLock does not provide this as a guarantee on Windows,
 // but, in practice, memory that has been VirtualLock'd almost never gets written to
@@ -28,8 +29,12 @@
 #include <unistd.h> // for sysconf
 #endif
 
-LockedPageManager *LockedPageManager::_instance = NULL;
+LockedPageManager *LockedPageManager::_instance = nullptr;
+#ifdef WIN32
 boost::once_flag LockedPageManager::init_flag = BOOST_ONCE_INIT;
+#else
+std::once_flag LockedPageManager::init_flag;
+#endif
 
 /** Determine system page size in bytes */
 static inline size_t GetSystemPageSize()

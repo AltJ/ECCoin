@@ -1,7 +1,6 @@
-// This file is part of the Eccoin project
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2016 The Bitcoin Core developers
-// Copyright (c) 2014-2018 The Eccoin developers
+// Copyright (c) 2009-2015 The Bitcoin Core developers
+// Copyright (c) 2015-2018 The Bitcoin Unlimited developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -10,10 +9,13 @@
 
 #include "support/cleanse.h"
 
+#include <assert.h>
 #include <map>
-
+#ifdef WIN32 // std::once has undefined symbol link problems in win32, but is better for android and fine for linux
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/once.hpp>
+#endif
+#include <mutex>
 
 /**
  * Thread-safe class to keep track of locked (ie, non-swappable) memory pages.
@@ -30,7 +32,7 @@ template <class Locker>
 class LockedPageManagerBase
 {
 public:
-    LockedPageManagerBase(size_t p_size) : page_size(p_size)
+    LockedPageManagerBase(size_t _page_size) : page_size(_page_size)
     {
         // Determine bitmask for extracting page from address
         assert(!(page_size & (page_size - 1))); // size must be power of two
@@ -41,7 +43,11 @@ public:
     // For all pages in affected range, increase lock count
     void LockRange(void *p, size_t size)
     {
+#ifdef WIN32 // remove when mingw win32 pthread link problems fixed
         boost::mutex::scoped_lock lock(mutex);
+#else
+        std::lock_guard<std::mutex> lock(mutex);
+#endif
         if (!size)
             return;
         const size_t base_addr = reinterpret_cast<size_t>(p);
@@ -65,7 +71,11 @@ public:
     // For all pages in affected range, decrease lock count
     void UnlockRange(void *p, size_t size)
     {
+#ifdef WIN32 // remove when mingw win32 pthread link problems fixed
         boost::mutex::scoped_lock lock(mutex);
+#else
+        std::lock_guard<std::mutex> lock(mutex);
+#endif
         if (!size)
             return;
         const size_t base_addr = reinterpret_cast<size_t>(p);
@@ -89,13 +99,21 @@ public:
     // Get number of locked pages for diagnostics
     int GetLockedPageCount()
     {
+#ifdef WIN32 // remove when mingw win32 pthread link problems fixed
         boost::mutex::scoped_lock lock(mutex);
+#else
+        std::lock_guard<std::mutex> lock(mutex);
+#endif
         return histogram.size();
     }
 
 private:
     Locker locker;
+#ifdef WIN32
     boost::mutex mutex;
+#else
+    std::mutex mutex;
+#endif
     size_t page_size, page_mask;
     // map of page base address to lock count
     typedef std::map<size_t, int> Histogram;
@@ -136,7 +154,11 @@ class LockedPageManager : public LockedPageManagerBase<MemoryPageLocker>
 public:
     static LockedPageManager &Instance()
     {
+#ifdef WIN32
         boost::call_once(LockedPageManager::CreateInstance, LockedPageManager::init_flag);
+#else
+        std::call_once(LockedPageManager::init_flag, LockedPageManager::CreateInstance);
+#endif
         return *LockedPageManager::_instance;
     }
 
@@ -155,7 +177,11 @@ private:
     }
 
     static LockedPageManager *_instance;
+#ifdef WIN32
     static boost::once_flag init_flag;
+#else
+    static std::once_flag init_flag;
+#endif
 };
 
 //

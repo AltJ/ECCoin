@@ -175,7 +175,6 @@ UniValue findroute(const UniValue &params, bool fHelp)
     GetStrongRandBytes((uint8_t *)&nonce, sizeof(nonce));
     CPubKey key;
     RequestRouteToPeer(g_connman.get(), key, nonce, CPubKey(vPubKey.begin(), vPubKey.end()));
-    LogPrintf("done sending route requests \n");
     return NullUniValue;
 }
 
@@ -202,7 +201,6 @@ UniValue haveroute(const UniValue &params, bool fHelp)
     {
         throw JSONRPCError(RPC_CLIENT_P2P_DISABLED, "Error: Peer-to-peer functionality missing or disabled");
     }
-    LogPrintf("have route was given pubkey %s \n", params[0].get_str());
     bool fInvalid = false;
     std::vector<unsigned char> vPubKey = DecodeBase64(params[0].get_str().c_str(), &fInvalid);
     if (fInvalid)
@@ -248,7 +246,7 @@ UniValue sendpacket(const UniValue &params, bool fHelp)
     return result;
 }
 
-UniValue getbuffer(const UniValue &params, bool fHelp)
+UniValue registerbuffer(const UniValue &params, bool fHelp)
 {
     if (!IsBetaEnabled())
     {
@@ -258,22 +256,53 @@ UniValue getbuffer(const UniValue &params, bool fHelp)
     if (fHelp || params.size() != 1)
     {
         throw std::runtime_error(
+            "registerbuffer\n"
+            "\nattempts to register the buffer for a network service protocol to a specific and returns the pubkey needed to read the buffer\n"
+            "\nArguments:\n"
+            "1. \"protocolId\"   (number, required) The id of the protocol being requested\n"
+            "\nExamples:\n" +
+            HelpExampleCli("registerbuffer", "1 \"BHcOxO9SxZshlmXffMFdJYuAXqusM3zVS7Ary66j5SiupLsnGeMONwmM/qG6zIEJpoGznWtmFFZ63mo5YXGWBcU=\"") +
+            HelpExampleRpc("registerbuffer", "1, \"BHcOxO9SxZshlmXffMFdJYuAXqusM3zVS7Ary66j5SiupLsnGeMONwmM/qG6zIEJpoGznWtmFFZ63mo5YXGWBcU=\"")
+        );
+    }
+    uint8_t nProtocolId = (uint8_t)params[0].get_int();
+    UniValue obj(UniValue::VOBJ);
+    std::string pubkey;
+    if (g_packetman.RegisterBuffer(nProtocolId, pubkey))
+    {
+        return pubkey;
+    }
+    return "Failed to register buffer";
+}
+
+UniValue getbuffer(const UniValue &params, bool fHelp)
+{
+    if (!IsBetaEnabled())
+    {
+        return "This rpc call requires beta features to be enabled (-beta or beta=1) \n";
+    }
+
+    if (fHelp || params.size() != 2)
+    {
+        throw std::runtime_error(
             "getbuffer\n"
             "\nattempts to get the buffer for a network service protocol\n"
             "\nArguments:\n"
             "1. \"protocolId\"   (number, required) The id of the protocol being requested\n"
+            "2. \"signature\"   (string, required) The authentication signature required to request the buffer\n"
             "\nExamples:\n" +
-            HelpExampleCli("getbuffer", "1") +
-            HelpExampleRpc("getbuffer", "1")
+            HelpExampleCli("getbuffer", "1 \"BHcOxO9SxZshlmXffMFdJYuAXqusM3zVS7Ary66j5SiupLsnGeMONwmM/qG6zIEJpoGznWtmFFZ63mo5YXGWBcU=\"") +
+            HelpExampleRpc("getbuffer", "1, \"BHcOxO9SxZshlmXffMFdJYuAXqusM3zVS7Ary66j5SiupLsnGeMONwmM/qG6zIEJpoGznWtmFFZ63mo5YXGWBcU=\"")
         );
     }
     uint8_t nProtocolId = (uint8_t)params[0].get_int();
-    PacketBuffer buffer;
+    std::string sig = params[1].get_str();
+    std::vector<CPacket> bufferData;
     UniValue obj(UniValue::VOBJ);
-    if (g_packetman.GetBuffer(nProtocolId, buffer))
+    if (g_packetman.GetBuffer(nProtocolId, bufferData, sig))
     {
         uint64_t counter = 0;
-        for (auto &entry: buffer.vRecievedPackets)
+        for (auto &entry: bufferData)
         {
             std::stringstream hexstream;
             hexstream << std::hex;
@@ -286,6 +315,51 @@ UniValue getbuffer(const UniValue &params, bool fHelp)
         }
     }
     return obj;
+}
+
+UniValue buffersignmessage(const UniValue &params, bool fHelp)
+{
+    if (!IsBetaEnabled())
+    {
+        return "This rpc call requires beta features to be enabled (-beta or beta=1) \n";
+    }
+
+    if (fHelp || params.size() != 2)
+    {
+        throw std::runtime_error(
+            "buffersignmessage\n"
+            "\nsigns a message with a provided base64 encoded pubkey\n"
+            "\nArguments:\n"
+            "1. \"pubkey\"   (string, required) The base64 encoded pubkey\n"
+            "2. \"message\"  (string, required) The message to be signed\n"
+            "\nResult:\n"
+            "\"signature\"          (string) The signature of the message encoded in base 64\n"
+            "\nExamples:\n" +
+            HelpExampleCli("buffersignmessage", "\"BHcOxO9SxZshlmXffMFdJYuAXqusM3zVS7Ary66j5SiupLsnGeMONwmM/qG6zIEJpoGznWtmFFZ63mo5YXGWBcU=\" \"my message\"") +
+            HelpExampleRpc("buffersignmessage", "\"BHcOxO9SxZshlmXffMFdJYuAXqusM3zVS7Ary66j5SiupLsnGeMONwmM/qG6zIEJpoGznWtmFFZ63mo5YXGWBcU=\", \"my message\"")
+        );
+    }
+
+    std::string strPubKey = params[0].get_str();
+    std::string strMessage = params[1].get_str();
+
+    CHashWriter ss(SER_GETHASH, 0);
+    ss << strMessage;
+
+    std::vector<unsigned char> vchSig;
+    // restore the pubkey from the base64 encoded pubkey provided
+    CPubKey pubkey(strPubKey);
+    CKey key;
+    if (!g_packetman.GetBufferKey(pubkey, key))
+    {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "buffersignmessage: lookup failed");
+    }
+
+    if (!key.SignCompact(ss.GetHash(), vchSig))
+    {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "buffersignmessage: Sign failed");
+    }
+    return EncodeBase64(&vchSig[0], vchSig.size());
 }
 
 UniValue tagsignmessage(const UniValue &params, bool fHelp)
