@@ -55,13 +55,12 @@ public:
 
     //! Destructor (again necessary because of memlocking).
     ~CKey() { UnlockObject(vch); }
-
     friend bool operator==(const CKey &a, const CKey &b)
     {
         return a.fCompressed == b.fCompressed && a.size() == b.size() && memcmp(&a.vch[0], &b.vch[0], a.size()) == 0;
     }
 
-    void operator=(const CKey& b)
+    void operator=(const CKey &b)
     {
         fValid = b.fValid;
         fCompressed = b.fCompressed;

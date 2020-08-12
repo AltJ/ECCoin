@@ -4,8 +4,8 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "beta.h"
-#include "net/aodv.h"
-#include "net/packetmanager.h"
+#include "roam/aodv.h"
+#include "roam/packetmanager.h"
 #include "rpcserver.h"
 #include "util/logger.h"
 #include "util/utilstrencodings.h"

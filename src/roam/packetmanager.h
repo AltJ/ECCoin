@@ -3,8 +3,8 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef ECCOIN_NET_PACKETMANAGER_H
-#define ECCOIN_NET_PACKETMANAGER_H
+#ifndef ROAM_PACKETMANAGER_H
+#define ROAM_PACKETMANAGER_H
 
 #include <map>
 #include <utility>
@@ -12,7 +12,7 @@
 
 #include "aodv.h"
 #include "datapacket.h"
-#include "net.h"
+#include "net/net.h"
 #include "pubkey.h"
 #include "util/utiltime.h"
 #include "validationinterface.h"

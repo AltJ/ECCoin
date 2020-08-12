@@ -4,14 +4,14 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef ECCOIN_NET_AODV_H
-#define ECCOIN_NET_AODV_H
+#ifndef ROAM_AODV_H
+#define ROAM_AODV_H
 
 #include <map>
 #include <utility>
 #include <vector>
 
-#include "net.h"
+#include "net/net.h"
 #include "pubkey.h"
 #include "sync.h"
 
@@ -35,11 +35,7 @@ struct RREQRESPONSE
         found = _found;
     }
 
-    friend inline bool operator < (const RREQRESPONSE &a, const RREQRESPONSE &b)
-    {
-        return (a.nonce < b.nonce);
-    }
-
+    friend inline bool operator<(const RREQRESPONSE &a, const RREQRESPONSE &b) { return (a.nonce < b.nonce); }
 };
 
 class CAodvRouteTable
@@ -57,7 +53,7 @@ private:
 
 public:
     mutable CRecursiveSharedCriticalSection cs_aodv;
-    std::set<RREQRESPONSE>responseQueue;
+    std::set<RREQRESPONSE> responseQueue;
 
 private:
     bool HaveKeyRoute(const CPubKey &key);
