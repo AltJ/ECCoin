@@ -8,7 +8,6 @@
 
 #include "net/messages.h"
 
-#include "aodv.h"
 #include "args.h"
 #include "beta.h"
 #include "blockstorage/blockstorage.h"
@@ -22,13 +21,14 @@
 #include "net/addrman.h"
 #include "net/dosman.h"
 #include "net/nodestate.h"
-#include "net/packetmanager.h"
 #include "net/protocol.h"
 #include "net/requestmanager.h"
 #include "policy/fees.h"
 #include "policy/policy.h"
 #include "processblock.h"
 #include "processheader.h"
+#include "roam/aodv.h"
+#include "roam/packetmanager.h"
 #include "serialize.h"
 #include "sync.h"
 #include "txmempool.h"

@@ -100,9 +100,7 @@ BITCOIN_CORE_H = \
   merkleblock.h \
   net/addrdb.h \
   net/addrman.h \
-  net/aodv.h \
   net/connman.h \
-  net/datapacket.h \
   net/dosman.h \
   net/messages.h \
   net/net.h \
@@ -112,12 +110,8 @@ BITCOIN_CORE_H = \
   net/netmessage.h \
   net/node.h \
   net/nodestate.h \
-  net/packetmanager.h \
   net/protocol.h \
   net/requestmanager.h \
-  net/routingtag.h \
-  net/tagdb.h \
-  net/tagstore.h \
   chain/chainparams.h \
   policy/fees.h \
   policy/policy.h \
@@ -130,6 +124,12 @@ BITCOIN_CORE_H = \
   processheader.h \
   pubkey.h \
   random.h \
+  roam/aodv.h \
+  roam/datapacket.h \
+  roam/packetmanager.h \
+  roam/routingtag.h \
+  roam/tagdb.h \
+  roam/tagstore.h \
   rpc/events.h \
   rpc/rpcclient.h \
   rpc/rpcprotocol.h \
@@ -252,9 +252,7 @@ libbitcoin_server_a_SOURCES = \
   merkleblock.cpp \
   net/addrdb.cpp \
   net/addrman.cpp \
-  net/aodv.cpp \
   net/connman.cpp \
-  net/datapacket.cpp \
   net/dosman.cpp \
   net/messages.cpp \
   net/net.cpp \
@@ -262,12 +260,8 @@ libbitcoin_server_a_SOURCES = \
   net/netbase.cpp \
   net/netmessage.cpp \
   net/node.cpp \
-  net/packetmanager.cpp \
   net/protocol.cpp \
   net/requestmanager.cpp \
-  net/routingtag.cpp \
-  net/tagdb.cpp \
-  net/tagstore.cpp \
   policy/fees.cpp \
   policy/policy.cpp \
   pow.cpp \
@@ -275,6 +269,12 @@ libbitcoin_server_a_SOURCES = \
   processheader.cpp \
   pubkey.cpp \
   random.cpp \
+  roam/aodv.cpp \
+  roam/datapacket.cpp \
+  roam/packetmanager.cpp \
+  roam/routingtag.cpp \
+  roam/tagdb.cpp \
+  roam/tagstore.cpp \
   rpc/rpcaodv.cpp \
   rpc/rpcblockchain.cpp \
   rpc/rpcclient.cpp \
@@ -362,6 +362,7 @@ CLEANFILES += consensus/*.gcda consensus/*.gcno
 CLEANFILES += crypto/*.gcda crypto/*.gcno
 CLEANFILES += policy/*.gcda policy/*.gcno
 CLEANFILES += primitives/*.gcda primitives/*.gcno
+CLEANFILES += roam/*.gcda roam/*.gcno
 CLEANFILES += rsm/*.gcda rsm/*.gcno
 CLEANFILES += script/*.gcda script/*.gcno
 CLEANFILES += support/*.gcda support/*.gcno

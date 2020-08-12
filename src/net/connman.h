@@ -12,7 +12,7 @@
 #include "chain/chainparams.h"
 #include "net/netconstants.h"
 #include "node.h"
-#include "tagstore.h"
+#include "roam/tagstore.h"
 #include "threadgroup.h"
 
 struct AddedNodeInfo

@@ -5,7 +5,6 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "aodv.h"
-#include "net.h"
 
 ///////// PRIVATE ////////////
 
@@ -71,7 +70,7 @@ void CAodvRouteTable::AddRoute(const CPubKey &key, const NodeId &node)
 bool CAodvRouteTable::GetKeyNode(const CPubKey &key, NodeId &result)
 {
     RECURSIVEREADLOCK(cs_aodv);
-    if(!HaveKeyRoute(key))
+    if (!HaveKeyRoute(key))
     {
         return false;
     }
@@ -122,11 +121,7 @@ void RecordRequestOrigin(const uint64_t &nonce, const CPubKey &source)
     g_aodvtable.AddNewRequestSource(nonce, source);
 }
 
-bool GetRequestOrigin(const uint64_t &nonce, CPubKey &source)
-{
-    return g_aodvtable.GetRequestSource(nonce, source);
-}
-
+bool GetRequestOrigin(const uint64_t &nonce, CPubKey &source) { return g_aodvtable.GetRequestSource(nonce, source); }
 void _RequestRouteToPeer(CConnman &connman, const CPubKey &source, const uint64_t &nonce, const CPubKey &searchKey)
 {
     if (g_aodvtable.IsOldRequest(nonce))
@@ -147,11 +142,7 @@ void RequestRouteToPeer(CConnman *connman, const CPubKey &source, const uint64_t
     _RequestRouteToPeer(*connman, source, nonce, searchKey);
 }
 
-void RecordRouteToPeer(const CPubKey &searchKey, const NodeId &node)
-{
-    g_aodvtable.AddRoute(searchKey, node);
-}
-
+void RecordRouteToPeer(const CPubKey &searchKey, const NodeId &node) { g_aodvtable.AddRoute(searchKey, node); }
 void AddResponseToQueue(CPubKey source, uint64_t nonce, CPubKey pubkey)
 {
     RECURSIVEWRITELOCK(g_aodvtable.cs_aodv);
