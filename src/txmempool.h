@@ -115,8 +115,6 @@ public:
         unsigned int nSigOps,
         LockPoints lp);
 
-    CTxMemPoolEntry(const CTxMemPoolEntry &other);
-
     const CTransaction &GetTx() const { return *this->tx; }
     CTransactionRef GetSharedTx() const { return this->tx; }
     /**

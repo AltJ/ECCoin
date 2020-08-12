@@ -310,7 +310,7 @@ std::unique_ptr<CBlockTemplate> CreateNewPoWBlock(CWallet *pwallet, const CScrip
         pblock->nNonce = 0;
     }
 
-    return std::move(pblocktemplate);
+    return pblocktemplate;
 }
 
 void FormatHashBuffers(CBlock *pblock, char *pmidstate, char *pdata, char *phash1)
@@ -322,18 +322,22 @@ void FormatHashBuffers(CBlock *pblock, char *pmidstate, char *pdata, char *phash
     {
         struct unnamed2
         {
-            int nVersion;
+            int nVersion = 0;
             uint256 hashPrevBlock;
             uint256 hashMerkleRoot;
-            unsigned int nTime;
-            unsigned int nBits;
-            unsigned int nNonce;
+            unsigned int nTime = 0;
+            unsigned int nBits = 0;
+            unsigned int nNonce = 0;
         } block;
         unsigned char pchPadding0[64];
         uint256 hash1;
         unsigned char pchPadding1[64];
     } tmp;
-    memset(&tmp, 0, sizeof(tmp));
+    tmp.block.hashPrevBlock.SetNull();
+    tmp.block.hashMerkleRoot.SetNull();
+    tmp.hash1.SetNull();
+    memset(&tmp.pchPadding0, 0, 64);
+    memset(&tmp.pchPadding1, 0, 64);
 
     tmp.block.nVersion = pblock->nVersion;
     tmp.block.hashPrevBlock = pblock->hashPrevBlock;

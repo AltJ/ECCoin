@@ -306,7 +306,7 @@ std::unique_ptr<CBlockTemplate> CreateNewPoSBlock(CWallet *pwallet, const CScrip
         }
     }
 
-    return std::move(pblocktemplate);
+    return pblocktemplate;
 }
 
 
