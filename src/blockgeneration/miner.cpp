@@ -364,10 +364,12 @@ void FormatHashBuffers(CBlock *pblock, char *pmidstate, char *pdata, char *phash
 bool CheckWork(const CBlock *pblock, CWallet &wallet, boost::shared_ptr<CReserveScript> coinbaseScript)
 {
     arith_uint256 hash = UintToArith256(pblock->GetHash());
-    arith_uint256 hashTarget = arith_uint256(pblock->nBits);
+    arith_uint256 hashTarget = arith_uint256().SetCompact(pblock->nBits);
 
     if (hash > hashTarget && pblock->IsProofOfWork())
+    {
         return error("Miner : proof-of-work not meeting target");
+    }
 
     //// debug print
     LogPrintf("Miner:\n");
@@ -480,7 +482,7 @@ void EccMiner(CWallet *pwallet)
         // Search
         //
         int64_t nStart = GetTime();
-        arith_uint256 hashTarget = arith_uint256(pblock->nBits);
+        arith_uint256 hashTarget = arith_uint256().SetCompact(pblock->nBits);
         unsigned int max_nonce = 0xffff0000;
         CBlockHeader res_header;
         arith_uint256 result;
