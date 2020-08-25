@@ -563,6 +563,18 @@ public:
     void _ClearPrioritisation(const uint256 hash);
 
 public:
+    std::vector<CTransactionRef> GetAllTxs()
+    {
+        WRITELOCK(cs_txmempool);
+        std::vector<CTransactionRef> mempooltxs;
+        mempooltxs.reserve(mapTx.size());
+        for (CTxMemPool::indexed_transaction_set::const_iterator it = mapTx.begin(); it != mapTx.end(); it++)
+        {
+            mempooltxs.push_back(it->GetSharedTx());
+        }
+        return mempooltxs;
+    }
+
     /** Remove a set of transactions from the mempool.
      *  If a transaction is in this set, then all in-mempool descendants must
      *  also be in the set.*/

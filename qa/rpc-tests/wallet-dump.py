@@ -35,12 +35,12 @@ def read_dump(file_name, addrs, hd_master_addr_old):
                         # ensure we have generated a new hd master key
                         assert(hd_master_addr_old != addr)
                         hd_master_addr_ret = addr
-                    else:
-                        keypath = addr_keypath.rstrip().split("hdkeypath=")[1]
+                    #else:
+                        #keypath = addr_keypath.rstrip().split("hdkeypath=")[1]
 
                     # count key types
                     for addrObj in addrs:
-                        if addrObj['address'] == addr and addrObj['hdkeypath'] == keypath and keytype == "label=":
+                        if str(addrObj['address']).strip() == str(addr).strip() and keytype == "label=": # and addrObj['hdkeypath'] == keypath
                             found_addr += 1
                             break
                         elif keytype == "change=1":

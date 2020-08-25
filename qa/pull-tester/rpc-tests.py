@@ -178,38 +178,37 @@ if ENABLE_ZMQ:
 
 #Tests
 testScripts = [ RpcTest(t) for t in [
-    #'getchaintips', #TIMEOUT
+    Disabled('bip68-112-113-p2p', "univalue assertion error"),
+    'getchaintips',
     'httpbasics',
     'keypool',
     'listtransactions',
     #'mempool_limit',
-    #'mempool_reorg',
+    'mempool_reorg',
     #'mempool_resurrect_test',
     #'mempool_spendcoinbase',
-    Disabled('mintingtest', 'temporary'),
+    'mintingtest',
     'multi_rpc',
     Disabled('nodehandling', "Banning peers temporarily not working"),
     'notify',
     'proxy_test',
-    Disabled('receivedby','temporary'),
+    'receivedby',
     'reindex',
     #'sendheaders', #rpc missing
     'sendpacket',
     'txpropagate',
     'wallet',
     Disabled('walletbackup', 'temporary'),
-    #'wallet-dump',
+    'wallet-dump',
     'zapwallettxes',
     #'rawtransactions', ???
     #'fundrawtransaction', ???
     #
     Disabled('mempool_limit', "FAILS"),
-    Disabled('mempool_reorg', "FAILS"),
     Disabled('mempool_resurrect_test', "FAILS"),
     Disabled('mempool_spendcoinbase', "FAILS"),
     #
     Disabled('abandonconflict', "FAILS"),
-    Disabled('bip68-112-113-p2p', "FAILS"),
     Disabled('decodescript', "FAILS"),
     Disabled('invalidtxrequest', "FAILS"),
     Disabled('merkle_blocks', "FAILS"),
