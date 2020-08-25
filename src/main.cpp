@@ -188,7 +188,6 @@ bool TestLockPointValidity(const LockPoints *lp)
 
 bool CheckSequenceLocks(const CTransaction &tx, int flags, LockPoints *lp, bool useExistingLockPoints)
 {
-    AssertLockHeld(cs_main);
     AssertLockHeld(mempool.cs_txmempool);
 
     CBlockIndex *tip = g_chainman.chainActive.Tip();
@@ -302,7 +301,6 @@ bool AcceptToMemoryPoolWorker(CTxMemPool &pool,
     std::vector<COutPoint> &vCoinsToUncache)
 {
     const CTransaction &tx = *ptx;
-    AssertLockHeld(cs_main);
 
     if (!CheckTransaction(tx, state))
     {
@@ -605,7 +603,6 @@ bool AcceptToMemoryPool(CTxMemPool &pool,
     bool fRejectAbsurdFee)
 {
     std::vector<COutPoint> vCoinsToUncache;
-    LOCK(cs_main);
     bool res = AcceptToMemoryPoolWorker(
         pool, state, tx, fLimitFree, pfMissingInputs, fOverrideMempoolLimit, fRejectAbsurdFee, vCoinsToUncache);
     if (pfMissingInputs && !res && !*pfMissingInputs)
@@ -899,18 +896,23 @@ void PruneBlockIndexCandidates()
 
 bool InvalidateBlock(CValidationState &state, const Consensus::Params &consensusParams, CBlockIndex *pindex)
 {
-    RECURSIVEWRITELOCK(g_chainman.cs_mapBlockIndex);
-    // Mark the block itself as invalid.
-    pindex->nStatus |= BLOCK_FAILED_VALID;
-    setDirtyBlockIndex.insert(pindex);
-    setBlockIndexCandidates.erase(pindex);
+    {
+        RECURSIVEWRITELOCK(g_chainman.cs_mapBlockIndex);
+        // Mark the block itself as invalid.
+        pindex->nStatus |= BLOCK_FAILED_VALID;
+        setDirtyBlockIndex.insert(pindex);
+        setBlockIndexCandidates.erase(pindex);
+    }
 
     while (g_chainman.chainActive.Contains(pindex))
     {
         CBlockIndex *pindexWalk = g_chainman.chainActive.Tip();
-        pindexWalk->nStatus |= BLOCK_FAILED_CHILD;
-        setDirtyBlockIndex.insert(pindexWalk);
-        setBlockIndexCandidates.erase(pindexWalk);
+        {
+            RECURSIVEWRITELOCK(g_chainman.cs_mapBlockIndex);
+            pindexWalk->nStatus |= BLOCK_FAILED_CHILD;
+            setDirtyBlockIndex.insert(pindexWalk);
+            setBlockIndexCandidates.erase(pindexWalk);
+        }
         // ActivateBestChain considers blocks already in chainActive
         // unconditionally valid already, so force disconnect away from it.
         if (!DisconnectTip(state, consensusParams))
@@ -924,15 +926,18 @@ bool InvalidateBlock(CValidationState &state, const Consensus::Params &consensus
     LimitMempoolSize(mempool, gArgs.GetArg("-maxmempool", DEFAULT_MAX_MEMPOOL_SIZE) * 1000000,
         gArgs.GetArg("-mempoolexpiry", DEFAULT_MEMPOOL_EXPIRY) * 60 * 60);
 
-    BlockMap::iterator it = g_chainman.mapBlockIndex.begin();
-    while (it != g_chainman.mapBlockIndex.end())
     {
-        if (it->second->IsValid(BLOCK_VALID_TRANSACTIONS) && it->second->nChainTx &&
-            !setBlockIndexCandidates.value_comp()(it->second, g_chainman.chainActive.Tip()))
+        RECURSIVEWRITELOCK(g_chainman.cs_mapBlockIndex);
+        BlockMap::iterator it = g_chainman.mapBlockIndex.begin();
+        while (it != g_chainman.mapBlockIndex.end())
         {
-            setBlockIndexCandidates.insert(it->second);
+            if (it->second->IsValid(BLOCK_VALID_TRANSACTIONS) && it->second->nChainTx &&
+                !setBlockIndexCandidates.value_comp()(it->second, g_chainman.chainActive.Tip()))
+            {
+                setBlockIndexCandidates.insert(it->second);
+            }
+            it++;
         }
-        it++;
     }
 
     InvalidChainFound(pindex);

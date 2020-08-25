@@ -72,7 +72,9 @@ bool DisconnectTip(CValidationState &state, const Consensus::Params &consensusPa
     CBlock &block = *pblock;
     {
         if (!ReadBlockFromDisk(block, pindexDelete, consensusParams))
+        {
             return AbortNode(state, "Failed to read block");
+        }
     }
     // Apply the block atomically to the chain state.
     {
@@ -85,30 +87,10 @@ bool DisconnectTip(CValidationState &state, const Consensus::Params &consensusPa
     }
     // Write the chain state to disk, if necessary.
     if (!FlushStateToDisk(state, FLUSH_STATE_IF_NEEDED))
-        return false;
-    // Resurrect mempool transactions from the disconnected block.
-    std::vector<uint256> vHashUpdate;
-    for (auto const &ptx : block.vtx)
     {
-        const CTransaction &tx = *ptx;
-        // ignore validation errors in resurrected transactions
-        std::list<CTransactionRef> removed;
-        CValidationState stateDummy;
-        if (tx.IsCoinBase() || tx.IsCoinStake() || !AcceptToMemoryPool(mempool, stateDummy, ptx, false, NULL, true))
-        {
-            mempool.remove(tx, removed, true);
-        }
-        else if (mempool.exists(tx.GetHash()))
-        {
-            vHashUpdate.push_back(tx.GetHash());
-        }
+        return false;
     }
-    // AcceptToMemoryPool/addUnchecked all assume that new mempool entries have
-    // no in-mempool children, which is generally not true when adding
-    // previously-confirmed transactions back to the mempool.
-    // UpdateTransactionsFromBlock finds descendants of any transactions in this
-    // block that were added back and cleans up the mempool state.
-    mempool.UpdateTransactionsFromBlock(vHashUpdate);
+
     // Update chainActive and related variables.
     UpdateTip(pindexDelete->pprev);
     // Let wallets know transactions went from 1-confirmed to
@@ -116,6 +98,28 @@ bool DisconnectTip(CValidationState &state, const Consensus::Params &consensusPa
     for (const auto &ptx : block.vtx)
     {
         SyncWithWallets(ptx, nullptr, -1);
+    }
+
+    // clear the mempool and resubmit transactions
+    // TODO : this is probably not performant but it works for now
+    {
+        std::vector<CTransactionRef> mempoolTxs = mempool.GetAllTxs();
+        mempool.clear();
+        for (auto const &ptx : block.vtx)
+        {
+            // coinbase and coinstake txs are never added to the mempool.
+            if (ptx->IsCoinBase() || ptx->IsCoinStake())
+            {
+                continue;
+            }
+            CValidationState stateDummy;
+            AcceptToMemoryPool(mempool, stateDummy, ptx, false, NULL, true);
+        }
+        for (auto &ptx : mempoolTxs)
+        {
+            CValidationState stateDummy;
+            AcceptToMemoryPool(mempool, stateDummy, ptx, false, NULL, true);
+        }
     }
     return true;
 }
@@ -813,6 +817,7 @@ void InvalidChainFound(CBlockIndex *pindexNew)
     LogPrintf("%s:  current best=%s  height=%d  log2_work=%.8g  date=%s\n", __func__, tip->GetBlockHash().ToString(),
         g_chainman.chainActive.Height(), log(tip->nChainWork.getdouble()) / log(2.0),
         DateTimeStrFormat("%Y-%m-%d %H:%M:%S", tip->GetBlockTime()));
+    LOCK(cs_main);
     CheckForkWarningConditions();
 }
 
@@ -1217,13 +1222,13 @@ DisconnectResult DisconnectBlock(const CBlock &block, const CBlockIndex *pindex,
         error("DisconnectBlock(): no undo data available");
         return DISCONNECT_FAILED;
     }
+
+    if (!UndoReadFromDisk(blockUndo, pos, pindex->pprev->GetBlockHash()))
     {
-        if (!UndoReadFromDisk(blockUndo, pos, pindex->pprev->GetBlockHash()))
-        {
-            error("DisconnectBlock(): failure reading undo data");
-            return DISCONNECT_FAILED;
-        }
+        error("DisconnectBlock(): failure reading undo data");
+        return DISCONNECT_FAILED;
     }
+
     if (blockUndo.vtxundo.size() + 1 != block.vtx.size())
     {
         error("DisconnectBlock(): block and undo data inconsistent, vtxundo.size +1 %u != vtx.size %u",
@@ -1231,8 +1236,13 @@ DisconnectResult DisconnectBlock(const CBlock &block, const CBlockIndex *pindex,
         return DISCONNECT_FAILED;
     }
     // undo transactions in reverse of the OTI algorithm order (so add inputs first, then remove outputs)
-    for (unsigned int i = 1; i < block.vtx.size(); i++) // i=1 to skip the coinbase, it has no inputs
+    for (unsigned int i = 0; i < block.vtx.size(); i++)
     {
+        // coinbase has no inputs, coinstake does. only skip if coinbase
+        if (block.vtx[i]->IsCoinBase())
+        {
+            continue;
+        }
         const CTransaction &tx = *(block.vtx[i]);
         CTxUndo &txundo = blockUndo.vtxundo[i - 1];
         if (txundo.vprevout.size() != tx.vin.size())
