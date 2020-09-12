@@ -314,6 +314,31 @@ UniValue getbuffer(const UniValue &params, bool fHelp)
     return obj;
 }
 
+UniValue releasebuffer(const UniValue &params, bool fHelp)
+{
+    if (!IsBetaEnabled())
+    {
+        return "This rpc call requires beta features to be enabled (-beta or beta=1) \n";
+    }
+
+    if (fHelp || params.size() != 2)
+    {
+        throw std::runtime_error(
+            "releasebuffer\n"
+            "\nattempts to release the buffer for a network service protocol\n"
+            "\nArguments:\n"
+            "1. \"protocolId\"   (number, required) The id of the protocol being requested\n"
+            "2. \"signature\"   (string, required) The authentication signature required to release the buffer\n"
+            "\nExamples:\n" +
+            HelpExampleCli("releasebuffer", "1 \"BHcOxO9SxZshlmXffMFdJYuAXqusM3zVS7Ary66j5SiupLsnGeMONwmM/qG6zIEJpoGznWtmFFZ63mo5YXGWBcU=\"") +
+            HelpExampleRpc("releasebuffer", "1, \"BHcOxO9SxZshlmXffMFdJYuAXqusM3zVS7Ary66j5SiupLsnGeMONwmM/qG6zIEJpoGznWtmFFZ63mo5YXGWBcU=\"")
+        );
+    }
+    uint16_t nProtocolId = (uint8_t)params[0].get_int();
+    std::string sig = params[1].get_str();
+    return g_packetman.ReleaseBuffer(nProtocolId, sig);
+}
+
 UniValue buffersignmessage(const UniValue &params, bool fHelp)
 {
     if (!IsBetaEnabled())
