@@ -96,11 +96,11 @@ public:
 
     void CheckForTimeouts();
 
-    bool SendPacket(const std::vector<unsigned char> &vPubKey, const uint8_t &nProtocolId, const uint8_t &nProtocolVersion, const std::vector<uint8_t> vData);
+    bool SendPacket(const std::vector<unsigned char> &vPubKey, const uint16_t &nProtocolId, const std::vector<uint8_t> vData);
 
-    bool RegisterBuffer(uint8_t &protocolId, std::string &pubkey);
+    bool RegisterBuffer(uint16_t &protocolId, std::string &pubkey);
 
-    bool GetBuffer(uint8_t &protocolId, std::vector<CPacket> &bufferData, const std::string &sig);
+    bool GetBuffer(uint16_t &protocolId, std::vector<CPacket> &bufferData, const std::string &sig);
 
     bool GetBufferKey(const CPubKey &pubkey, CKey &key);
 };

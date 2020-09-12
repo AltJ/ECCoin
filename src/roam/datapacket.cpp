@@ -8,7 +8,6 @@
 void CPacketHeader::SetNull()
 {
     nPacketVersion = PACKET_VERSION;
-    nProtocolVersion = 0;
     nTotalLength = PACKET_HEADER_SIZE;
     nIdenfitication = 0;
     nProtocolId = 0;
@@ -61,7 +60,6 @@ CPacketHeader CPacket::GetHeader()
 {
     CPacketHeader header;
     header.nPacketVersion = this->nPacketVersion;
-    header.nProtocolVersion = this->nProtocolVersion;
     header.nProtocolId = this->nProtocolId;
     header.nTotalLength = this->nTotalLength;
     header.nIdenfitication = this->nIdenfitication;

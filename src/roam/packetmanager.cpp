@@ -11,7 +11,7 @@
 ///
 void CPacketManager::FinalizePacket(const uint64_t &nonce, std::map<uint64_t, CPacket>::iterator iter)
 {
-    uint8_t protocolId = iter->second.nProtocolId;
+    uint16_t protocolId = iter->second.nProtocolId;
     if (vBuffers[protocolId].IsUsed() == false)
     {
         // this is an error, the proper entry should have been made by BindBuffer
@@ -95,7 +95,7 @@ void CPacketManager::CheckForTimeouts()
     // a timeout is any partial packet that hasnt been updated in 30 seconds or more
 }
 
-bool CPacketManager::SendPacket(const std::vector<unsigned char> &vPubKey, const uint8_t &nProtocolId, const uint8_t &nProtocolVersion, const std::vector<uint8_t> vData)
+bool CPacketManager::SendPacket(const std::vector<unsigned char> &vPubKey, const uint16_t &nProtocolId, const std::vector<uint8_t> vData)
 {
     NodeId peerNode;
     if (!g_aodvtable.GetKeyNode(vPubKey, peerNode))
@@ -103,7 +103,7 @@ bool CPacketManager::SendPacket(const std::vector<unsigned char> &vPubKey, const
         return false;
     }
     CPubKey searchKey(vPubKey);
-    CPacket newPacket(nProtocolId, nProtocolVersion);
+    CPacket newPacket(nProtocolId);
     newPacket.PushBackData(vData);
 
     uint64_t nonce = 0;
@@ -124,7 +124,7 @@ bool CPacketManager::SendPacket(const std::vector<unsigned char> &vPubKey, const
     return true;
 }
 
-bool CPacketManager::RegisterBuffer(uint8_t &protocolId, std::string &pubkey)
+bool CPacketManager::RegisterBuffer(uint16_t &protocolId, std::string &pubkey)
 {
     if (vBuffers[protocolId].IsUsed())
     {
@@ -142,7 +142,7 @@ bool CPacketManager::RegisterBuffer(uint8_t &protocolId, std::string &pubkey)
     return true;
 }
 
-bool CPacketManager::GetBuffer(uint8_t &protocolId, std::vector<CPacket> &bufferData, const std::string &sig)
+bool CPacketManager::GetBuffer(uint16_t &protocolId, std::vector<CPacket> &bufferData, const std::string &sig)
 {
     if (vBuffers[protocolId].IsUsed())
     {

@@ -14,7 +14,7 @@
 #include <random>
 #include <vector>
 
-const uint64_t PACKET_HEADER_SIZE = 46; // 46 bytes
+const uint64_t PACKET_HEADER_SIZE = 45; // 45 bytes
 const uint64_t MEGABYTE = 1000000;
 const uint64_t MAX_DATA_SEGMENT_SIZE = 10 * MEGABYTE;
 const uint8_t PACKET_VERSION = 1;
@@ -24,16 +24,14 @@ class CPacketHeader
 public:
     uint8_t nPacketVersion; // versioning of the CPacketHeader and related classes
     uint16_t nProtocolId; // protocolId, should match the protocolid in mapBuffers
-    uint8_t nProtocolVersion; // versioning for use by the protocol itself
     uint64_t nTotalLength; // header + data in bytes (does not include extra vector serialization bytes)
     uint16_t nIdenfitication; // randomly generated
     uint256 nDataChecksum; // sha256 checksum
 
     CPacketHeader() { SetNull(); }
-    CPacketHeader(uint8_t nProtocolIdIn, uint8_t nProtocolVersionIn)
+    CPacketHeader(uint16_t nProtocolIdIn)
     {
         nProtocolId = nProtocolIdIn;
-        nProtocolVersion = nProtocolVersionIn;
         GenerateNewIdentifier();
     }
 
@@ -43,7 +41,6 @@ public:
     {
         READWRITE(nPacketVersion);
         READWRITE(nProtocolId);
-        READWRITE(nProtocolVersion);
         READWRITE(nTotalLength);
         READWRITE(nIdenfitication);
         READWRITE(nDataChecksum);
@@ -123,10 +120,7 @@ public:
         ClearAndSetSize();
     }
 
-    CPacket(uint16_t nProtocolIdIn, uint8_t nProtocolVersionIn) : CPacketHeader(nProtocolIdIn, nProtocolVersionIn)
-    {
-        vData.clear();
-    }
+    CPacket(uint16_t nProtocolIdIn) : CPacketHeader(nProtocolIdIn) { vData.clear(); }
     void PushBackData(const std::vector<uint8_t> &data);
     bool InsertData(CPacketDataSegment &newSegment);
     void ClearData();
