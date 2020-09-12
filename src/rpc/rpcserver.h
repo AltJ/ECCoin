@@ -277,6 +277,7 @@ extern UniValue haveroute(const UniValue &params, bool fHelp);
 extern UniValue sendpacket(const UniValue &params, bool fHelp);
 extern UniValue registerbuffer(const UniValue &params, bool fHelp);
 extern UniValue getbuffer(const UniValue &params, bool fHelp);
+extern UniValue releasebuffer(const UniValue &params, bool fHelp);
 extern UniValue buffersignmessage(const UniValue &params, bool fHelp);
 extern UniValue tagsignmessage(const UniValue &params, bool fHelp);
 extern UniValue tagverifymessage(const UniValue &params, bool fHelp);

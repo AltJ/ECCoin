@@ -44,6 +44,16 @@ bool CPacketManager::BindBuffer(uint16_t protocolId, CKey &_key, CPubKey &_pubke
     return true;
 }
 
+bool CPacketManager::UnbindBuffer(const uint16_t &protocolId)
+{
+    if (vBuffers[protocolId].IsUsed() == false)
+    {
+        return true;
+    }
+    vBuffers[protocolId].FreeBuffer();
+    return true;
+}
+
 
 ////////////////////////
 ///
@@ -140,6 +150,36 @@ bool CPacketManager::RegisterBuffer(uint16_t &protocolId, std::string &pubkey)
         pubkey = _pubkey.Raw64Encoded();
     }
     return true;
+}
+
+bool CPacketManager::ReleaseBuffer(const uint16_t &protocolId, const std::string &sig)
+{
+    if (vBuffers[protocolId].IsUsed() == false)
+    {
+        // the call did nothing, the buffer was not registered. the end state is the same as
+        // the intended end state of the user so return true.
+        return true;
+    }
+    PacketBuffer buffer = vBuffers[protocolId];
+    bool fInvalid = false;
+    std::vector<unsigned char> vchSig = DecodeBase64(sig.c_str(), &fInvalid);
+    if (fInvalid)
+    {
+        return false;
+    }
+    CHashWriter ss(SER_GETHASH, 0);
+    std::string requestMessage = "ReleaseBufferRequest";
+    ss << requestMessage;
+    CPubKey pubkey;
+    if (!pubkey.RecoverCompact(ss.GetHash(), vchSig))
+    {
+        return false;
+    }
+    if (pubkey.GetID() != buffer.boundPubkey.GetID())
+    {
+        return false;
+    }
+    return UnbindBuffer(protocolId);
 }
 
 bool CPacketManager::GetBuffer(uint16_t &protocolId, std::vector<CPacket> &bufferData, const std::string &sig)

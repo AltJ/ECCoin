@@ -87,12 +87,25 @@ class SendPacketTest (BitcoinTestFramework):
         time.sleep(1)
         assert_equal(sent, True)
         msg = "GetBufferRequest:" + "0" + str((bufferCount_key5 + 1))
+        bufferCount_key5 = bufferCount_key5 + 1
         sig = self.nodes[5].buffersignmessage(pubkey5, msg)
         buffer = self.nodes[5].getbuffer(0, sig)
         assert_equal(len(buffer), 3)
         assert_equal(buffer['0'], "7465737420737472696e6731")
         assert_equal(buffer['1'], "7465737420737472696e6732")
         assert_equal(buffer['2'], "7465737420737472696e6733")
+        # test that the buffer is empoty after a get
+        msg = "GetBufferRequest:" + "0" + str((bufferCount_key5 + 1))
+        bufferCount_key5 = bufferCount_key5 + 1
+        sig = self.nodes[5].buffersignmessage(pubkey5, msg)
+        buffer = self.nodes[5].getbuffer(0, sig)
+        assert_equal(len(buffer), 0)
+        # test that we can release the buffer
+        msg = "ReleaseBufferRequest"
+        sig = self.nodes[5].buffersignmessage(pubkey5, msg)
+        releaseResult = self.nodes[5].releasebuffer(0, sig)
+        assert_equal(releaseResult, True)
+
 
 
 if __name__ == '__main__':

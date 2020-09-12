@@ -79,6 +79,7 @@ private:
     CPacketManager(const CPacketManager &pman){}
     void FinalizePacket(const uint64_t &nonce, std::map<uint64_t, CPacket>::iterator iter);
     bool BindBuffer(uint16_t protocolId, CKey &_key, CPubKey &_pubkey);
+    bool UnbindBuffer(const uint16_t &protocolId);
 
 public:
     CPacketManager()
@@ -101,6 +102,8 @@ public:
     bool RegisterBuffer(uint16_t &protocolId, std::string &pubkey);
 
     bool GetBuffer(uint16_t &protocolId, std::vector<CPacket> &bufferData, const std::string &sig);
+
+    bool ReleaseBuffer(const uint16_t &protocolId, const std::string &sig);
 
     bool GetBufferKey(const CPubKey &pubkey, CKey &key);
 };

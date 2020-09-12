@@ -299,8 +299,8 @@ static const CRPCCommand vRPCCommands[] = {
     {"network", "getroutingpubkey", &getroutingpubkey, true}, {"network", "findroute", &findroute, true},
     {"network", "haveroute", &haveroute, true}, {"network", "sendpacket", &sendpacket, true},
     {"network", "registerbuffer", &registerbuffer, true}, {"network", "getbuffer", &getbuffer, true},
-    {"network", "buffersignmessage", &buffersignmessage, true}, {"network", "tagsignmessage", &tagsignmessage, true},
-    {"network", "tagverifymessage", &tagverifymessage, true},
+    {"network", "releasebuffer", &releasebuffer, true}, {"network", "buffersignmessage", &buffersignmessage, true},
+    {"network", "tagsignmessage", &tagsignmessage, true}, {"network", "tagverifymessage", &tagverifymessage, true},
 
     /* Block chain and UTXO */
     {"blockchain", "getblockchaininfo", &getblockchaininfo, true},
