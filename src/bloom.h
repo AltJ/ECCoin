@@ -15,6 +15,8 @@ class COutPoint;
 class CTransaction;
 class uint256;
 
+typedef std::shared_ptr<CTransaction> CTransactionRef;
+
 //! 20,000 items with fp rate < 0.1% or 10,000 items and <0.0001%
 static const unsigned int MAX_BLOOM_FILTER_SIZE = 36000; // bytes
 static const unsigned int MAX_HASH_FUNCS = 50;
@@ -98,7 +100,7 @@ public:
     bool IsWithinSizeConstraints() const;
 
     //! Also adds any outputs which match the filter to the filter (to match their spending txes)
-    bool IsRelevantAndUpdate(const CTransaction &tx);
+    bool IsRelevantAndUpdate(const CTransactionRef &tx);
 
     //! Checks for empty and full filters to avoid wasting cpu
     void UpdateEmptyFull();

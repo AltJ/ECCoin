@@ -1451,6 +1451,55 @@ bool static ProcessMessage(CNode *pfrom,
         }
     }
 
+    else if (strCommand == NetMsgType::MEMPOOL)
+    {
+        if (connman.OutboundTargetReached(false) && !pfrom->fWhitelisted)
+        {
+            LogPrintf("net", "mempool request with bandwidth limit reached, disconnect peer %s\n", pfrom->GetLogName());
+            pfrom->fDisconnect = true;
+            return true;
+        }
+        std::vector<uint256> vtxid;
+        mempool.queryHashes(vtxid);
+        std::vector<CInv> vInv;
+
+        // Because we have to take cs_filter after mempool.cs, in order to maintain locking order, we
+        // need find out if a filter is present first before later doing the mempool.get().
+        bool fHaveFilter = false;
+        {
+            LOCK(pfrom->cs_filter);
+            fHaveFilter = pfrom->pfilter ? true : false;
+        }
+
+        for (uint256 &hash : vtxid)
+        {
+            CInv inv(MSG_TX, hash);
+            if (fHaveFilter)
+            {
+                CTransactionRef ptx = nullptr;
+                ptx = mempool.get(inv.hash);
+                if (ptx == nullptr)
+                    continue; // another thread removed since queryHashes, maybe...
+
+                LOCK(pfrom->cs_filter);
+                if (!pfrom->pfilter->IsRelevantAndUpdate(ptx))
+                {
+                    continue;
+                }
+            }
+            vInv.push_back(inv);
+            if (vInv.size() == MAX_INV_SZ)
+            {
+                connman.PushMessage(pfrom, NetMsgType::INV, vInv);
+                vInv.clear();
+            }
+        }
+        if (vInv.size() > 0)
+        {
+            connman.PushMessage(pfrom, NetMsgType::INV, vInv);
+        }
+    }
+
     else if (strCommand == NetMsgType::PING)
     {
         {
