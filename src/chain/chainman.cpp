@@ -95,6 +95,14 @@ bool CChainManager::IsInitialBlockDownload()
         return false;
     bool state = (chainActive.Height() < pindexBestHeader.load()->nHeight - 24 * 6 ||
                   pindexBestHeader.load()->GetBlockTime() < GetTime() - chainParams.MaxTipAge());
+    // if we are on the testnet and the tip is a week behind we are not considered to be in IBD, the chain has stalled
+    if (state == true && chainParams.NetworkIDString() == "TESTNET0")
+    {
+        if (pindexBestHeader.load()->GetBlockTime() < (GetTime() - (24 * 60 * 60 * 7)))
+        {
+            state = false;
+        }
+    }
     if (!state)
         lockIBDState = true;
     return state;
