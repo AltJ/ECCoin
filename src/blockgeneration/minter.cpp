@@ -340,7 +340,13 @@ void EccMinter(CWallet *pwallet)
             if (shutdown_threads.load() || shutdown_minter_threads.load())
                 return;
         }
-        while (g_chainman.IsInitialBlockDownload() || pwallet->IsLocked())
+        while (pwallet->IsLocked())
+        {
+            MilliSleep(1000);
+            if (shutdown_threads.load() || shutdown_minter_threads.load())
+                return;
+        }
+        while (g_chainman.IsInitialBlockDownload())
         {
             MilliSleep(1000);
             if (shutdown_threads.load() || shutdown_minter_threads.load())
@@ -348,6 +354,10 @@ void EccMinter(CWallet *pwallet)
         }
         while (g_connman->GetNodeCount(CConnman::CONNECTIONS_ALL) < DEFAULT_MIN_BLOCK_GEN_PEERS)
         {
+            if (Params().NetworkIDString() == "TESTNET0" && g_connman->GetNodeCount(CConnman::CONNECTIONS_ALL) > 0)
+            {
+                break;
+            }
             MilliSleep(1000);
             if (shutdown_threads.load() || shutdown_minter_threads.load())
                 return;
