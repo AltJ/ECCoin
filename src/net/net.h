@@ -114,7 +114,7 @@ CAddress GetLocalAddress(const CNetAddr *paddrPeer, ServiceFlags nLocalServices)
 
 extern bool fDiscover;
 extern bool fListen;
-extern bool fRelayTxes;
+extern std::atomic<bool> fRelayTxes;
 
 extern CCriticalSection cs_alreadyaskfor;
 extern std::map<uint256, int64_t> mapAlreadyAskedFor;

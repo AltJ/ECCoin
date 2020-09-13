@@ -7,6 +7,7 @@
 
 #include "chain/chainman.h"
 #include "connman.h"
+#include "messages.h"
 
 extern std::atomic<int> nPreferredDownload;
 

@@ -219,3 +219,22 @@ void CDoSManager::SetBannedSetDirty(bool dirty)
     LOCK(cs_setBanned);
     setBannedIsDirty = dirty;
 }
+
+void CDoSManager::AddWhitelistedRange(const CSubNet &subnet)
+{
+    LOCK(cs_vWhitelistedRange);
+    vWhitelistedRange.push_back(subnet);
+}
+
+bool CDoSManager::IsWhitelistedRange(const CNetAddr &addr)
+{
+    LOCK(cs_vWhitelistedRange);
+    for (const CSubNet &subnet : vWhitelistedRange)
+    {
+        if (subnet.Match(addr))
+        {
+            return true;
+        }
+    }
+    return false;
+}

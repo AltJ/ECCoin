@@ -21,7 +21,6 @@ CNode::CNode(NodeId idIn,
       nLocalServices(nLocalServicesIn), nSendVersion(0)
 {
     nServices = NODE_NONE;
-    nServicesExpected = NODE_NONE;
     hSocket = hSocketIn;
     nRecvVersion = MIN_PROTO_VERSION;
     nLastSend = 0;
@@ -223,13 +222,15 @@ void CNode::copyStats(CNodeStats &stats)
     {
         LOCK(cs_vSend);
         X(mapSendBytesPerMsgCmd);
-        X(nSendBytes);
+
     }
     {
         LOCK(cs_vRecv);
         X(mapRecvBytesPerMsgCmd);
-        X(nRecvBytes);
+
     }
+    X(nSendBytes);
+    X(nRecvBytes);
     X(fWhitelisted);
 
     // It is common for nodes with good ping times to suddenly become lagged,
@@ -261,9 +262,9 @@ bool CNode::ReceiveMsgBytes(const char *pch, unsigned int nBytes, bool &complete
 {
     complete = false;
     int64_t nTimeMicros = GetTimeMicros();
-    LOCK(cs_vRecv);
     nLastRecv = nTimeMicros / 1000000;
     nRecvBytes += nBytes;
+    LOCK(cs_vRecv);
     while (nBytes > 0)
     {
         // Get current incomplete message, or create a new one.

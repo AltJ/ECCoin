@@ -64,6 +64,10 @@ public:
     //! set the "dirty" flag for the banlist
     void SetBannedSetDirty(bool dirty = true);
 
+    void AddWhitelistedRange(const CSubNet &subnet);
+
+    bool IsWhitelistedRange(const CNetAddr &addr);
+
 };
 
 // actual definition should be in globals.cpp for ordered construction/destruction

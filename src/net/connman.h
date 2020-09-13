@@ -46,24 +46,22 @@ private:
     uint64_t nMaxOutboundLimit;
     uint64_t nMaxOutboundTimeframe;
 
-    // Whitelisted ranges. Any node connecting from these is automatically
-    // whitelisted (as well as those connecting to whitelisted binds).
-    std::vector<CSubNet> vWhitelistedRange;
-    CCriticalSection cs_vWhitelistedRange;
-
     unsigned int nSendBufferMaxSize;
     unsigned int nReceiveFloodSize;
-
     std::vector<ListenSocket> vhListenSocket;
     bool fAddressesInitialized;
     CAddrMan addrman;
-    std::deque<std::string> vOneShots;
+
     CCriticalSection cs_vOneShots;
-    std::vector<std::string> vAddedNodes;
+    std::deque<std::string> vOneShots;
+
     CCriticalSection cs_vAddedNodes;
+    std::vector<std::string> vAddedNodes;
+
+    mutable CCriticalSection cs_vNodes;
     std::vector<CNode *> vNodes;
     std::list<CNode *> vNodesDisconnected;
-    mutable CCriticalSection cs_vNodes;
+
     std::atomic<NodeId> nLastNodeId;
 
     /** Services this instance offers */
@@ -90,6 +88,45 @@ public:
     CNetTagStore *tagstore;
     CPubKey pub_routing_id;
 
+private:
+    void ThreadOpenAddedConnections();
+    void ProcessOneShot();
+    void ThreadOpenConnections();
+    void ThreadMessageHandler();
+    void AcceptConnection(const ListenSocket &hListenSocket);
+    void ThreadSocketHandler();
+    void ThreadDNSAddressSeed();
+
+    uint64_t CalculateKeyedNetGroup(const CAddress &ad) const;
+
+    CNode *FindNode(const CNetAddr &ip);
+    CNode *FindNode(const CSubNet &subNet);
+    CNode *FindNode(const std::string &addrName);
+    CNode *FindNode(const CService &addr);
+
+    bool AttemptToEvictConnection();
+    CNode *ConnectNode(CAddress addrConnect, const char *pszDest, bool fCountFailure);
+
+    void DeleteNode(CNode *pnode);
+
+    NodeId GetNewNodeId();
+
+    size_t SocketSendData(CNode *pnode) const;
+    //! clean unused entries (if bantime has expired)
+    void DumpAddresses();
+    void _DumpData();
+    void DumpData(int64_t seconds_between_runs);
+
+    // Network stats
+    void RecordBytesRecv(uint64_t bytes);
+    void RecordBytesSent(uint64_t bytes);
+
+    // Whether the node should be passed out in ForEach* callbacks
+    bool NodeFullyConnected(const CNode *pnode) const;
+
+    void InitializeNode(CNode *pnode);
+
+public:
     enum NumConnections
     {
         CONNECTIONS_NONE = 0,
@@ -125,9 +162,7 @@ public:
 
         std::vector<uint8_t> serializedHeader;
         serializedHeader.reserve(CMessageHeader::HEADER_SIZE);
-        uint256 hash = Hash(data.data(), data.data() + nMessageSize);
         CMessageHeader hdr(Params().MessageStart(), sCommand.c_str(), nMessageSize);
-        memcpy(hdr.pchChecksum, hash.begin(), CMessageHeader::CHECKSUM_SIZE);
 
         CVectorWriter{SER_NETWORK, MIN_PROTO_VERSION, serializedHeader, 0, hdr};
 
@@ -277,8 +312,6 @@ public:
 
     unsigned int GetSendBufferSize() const;
 
-    void AddWhitelistedRange(const CSubNet &subnet);
-
     ServiceFlags GetLocalServices() const;
 
     //! set the max outbound target in bytes.
@@ -314,45 +347,6 @@ public:
     CPubKey GetPublicTagPubKey() const;
 
     void PushNodeVersion(CNode *pnode, int64_t nTime);
-
-private:
-    void ThreadOpenAddedConnections();
-    void ProcessOneShot();
-    void ThreadOpenConnections();
-    void ThreadMessageHandler();
-    void AcceptConnection(const ListenSocket &hListenSocket);
-    void ThreadSocketHandler();
-    void ThreadDNSAddressSeed();
-
-    uint64_t CalculateKeyedNetGroup(const CAddress &ad) const;
-
-    CNode *FindNode(const CNetAddr &ip);
-    CNode *FindNode(const CSubNet &subNet);
-    CNode *FindNode(const std::string &addrName);
-    CNode *FindNode(const CService &addr);
-
-    bool AttemptToEvictConnection();
-    CNode *ConnectNode(CAddress addrConnect, const char *pszDest, bool fCountFailure);
-    bool IsWhitelistedRange(const CNetAddr &addr);
-
-    void DeleteNode(CNode *pnode);
-
-    NodeId GetNewNodeId();
-
-    size_t SocketSendData(CNode *pnode) const;
-    //! clean unused entries (if bantime has expired)
-    void DumpAddresses();
-    void _DumpData();
-    void DumpData(int64_t seconds_between_runs);
-
-    // Network stats
-    void RecordBytesRecv(uint64_t bytes);
-    void RecordBytesSent(uint64_t bytes);
-
-    // Whether the node should be passed out in ForEach* callbacks
-    static bool NodeFullyConnected(const CNode *pnode);
-
-    void InitializeNode(CNode *pnode);
 };
 
 extern std::unique_ptr<CConnman> g_connman;
