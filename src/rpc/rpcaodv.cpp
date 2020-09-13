@@ -15,8 +15,6 @@
 
 #include <sstream>
 
-extern CCriticalSection cs_main;
-
 UniValue getaodvtable(const UniValue &params, bool fHelp)
 {
     if (!IsBetaEnabled())
@@ -129,7 +127,6 @@ UniValue getroutingpubkey(const UniValue &params, bool fHelp)
             HelpExampleRpc("getroutingpubkey", "")
         );
 
-    LOCK(cs_main);
     if (!g_connman)
     {
         throw JSONRPCError(RPC_CLIENT_P2P_DISABLED, "Error: Peer-to-peer functionality missing or disabled");
@@ -157,7 +154,6 @@ UniValue findroute(const UniValue &params, bool fHelp)
             HelpExampleRpc("findroute", "1139d39a984a0ff431c467f738d534c36824401a4735850561f7ac64e4d49f5b")
         );
 
-    LOCK(cs_main);
     if (!g_connman)
     {
         throw JSONRPCError(RPC_CLIENT_P2P_DISABLED, "Error: Peer-to-peer functionality missing or disabled");
@@ -166,7 +162,9 @@ UniValue findroute(const UniValue &params, bool fHelp)
     bool fInvalid = false;
     std::vector<unsigned char> vPubKey = DecodeBase64(params[0].get_str().c_str(), &fInvalid);
     if (fInvalid)
+    {
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Malformed pubkey base64 encoding");
+    }
     if (g_aodvtable.HaveRoute(CPubKey(vPubKey.begin(), vPubKey.end())))
     {
         return NullUniValue;
@@ -196,7 +194,6 @@ UniValue haveroute(const UniValue &params, bool fHelp)
             HelpExampleRpc("haveroute", "1139d39a984a0ff431c467f738d534c36824401a4735850561f7ac64e4d49f5b")
         );
 
-    LOCK(cs_main);
     if (!g_connman)
     {
         throw JSONRPCError(RPC_CLIENT_P2P_DISABLED, "Error: Peer-to-peer functionality missing or disabled");
@@ -204,10 +201,8 @@ UniValue haveroute(const UniValue &params, bool fHelp)
     bool fInvalid = false;
     std::vector<unsigned char> vPubKey = DecodeBase64(params[0].get_str().c_str(), &fInvalid);
     if (fInvalid)
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Malformed pubkey base64 encoding");
-    if (g_aodvtable.HaveRoute(CPubKey(vPubKey.begin(), vPubKey.end())))
     {
-        return true;
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Malformed pubkey base64 encoding");
     }
     return g_aodvtable.HaveRoute(CPubKey(vPubKey.begin(), vPubKey.end()));
 }
@@ -269,7 +264,7 @@ UniValue registerbuffer(const UniValue &params, bool fHelp)
     {
         return pubkey;
     }
-    return "Failed to register buffer";
+    throw JSONRPCError(RPC_INTERNAL_ERROR, "registerbuffer: failed to register buffer");
 }
 
 UniValue getbuffer(const UniValue &params, bool fHelp)
@@ -412,7 +407,6 @@ UniValue tagsignmessage(const UniValue &params, bool fHelp)
     ss << strMessageMagic;
     ss << strMessage;
 
-    LOCK(cs_main);
     if (!g_connman)
     {
         throw JSONRPCError(RPC_CLIENT_P2P_DISABLED, "Error: Peer-to-peer functionality missing or disabled");
@@ -424,16 +418,20 @@ UniValue tagsignmessage(const UniValue &params, bool fHelp)
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Sign failed, Tag error");
     }
     std::vector<unsigned char> vchSig;
-    // TODO : look into if sign or signcompact should be used here
-    // if (!pubtag.SignCompact(ss.GetHash(), vchSig))
     if (!pubtag.SignCompact(ss.GetHash(), vchSig))
+    {
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Sign failed");
-
+    }
     return EncodeBase64(&vchSig[0], vchSig.size());
 }
 
 UniValue tagverifymessage(const UniValue &params, bool fHelp)
 {
+    if (!IsBetaEnabled())
+    {
+        return "This rpc call requires beta features to be enabled (-beta or beta=1) \n";
+    }
+
     if (fHelp || params.size() != 3)
         throw std::runtime_error(
             "tagverifymessage \"ecc address\" \"signature\" \"message\"\n"

@@ -148,8 +148,9 @@ bool CPacketManager::RegisterBuffer(uint16_t &protocolId, std::string &pubkey)
     if (BindBuffer(protocolId, secret, _pubkey))
     {
         pubkey = _pubkey.Raw64Encoded();
+        return true;
     }
-    return true;
+    return false;
 }
 
 bool CPacketManager::ReleaseBuffer(const uint16_t &protocolId, const std::string &sig)
