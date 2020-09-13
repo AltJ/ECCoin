@@ -1282,7 +1282,7 @@ bool AppInit2(thread_group &threadGroup)
             LookupSubNet(net.c_str(), subnet);
             if (!subnet.IsValid())
                 return InitError(strprintf(("Invalid netmask specified in -whitelist: '%s'"), net));
-            connman.AddWhitelistedRange(subnet);
+            g_dosman->AddWhitelistedRange(subnet);
         }
     }
 

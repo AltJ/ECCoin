@@ -37,8 +37,6 @@ UniValue getconnectioncount(const UniValue &params, bool fHelp)
                                  "\nExamples:\n" +
                                  HelpExampleCli("getconnectioncount", "") + HelpExampleRpc("getconnectioncount", ""));
 
-    LOCK(cs_main);
-
     return (int)g_connman->GetNodeCount(CConnman::CONNECTIONS_ALL);
 }
 
@@ -101,8 +99,6 @@ UniValue getpeerinfo(const UniValue &params, bool fHelp)
             "]\n"
             "\nExamples:\n" +
             HelpExampleCli("getpeerinfo", "") + HelpExampleRpc("getpeerinfo", ""));
-
-    LOCK(cs_main);
 
     if (!g_connman)
     {
@@ -442,7 +438,6 @@ UniValue getnetworkinfo(const UniValue &params, bool fHelp)
             "\nExamples:\n" +
             HelpExampleCli("getnetworkinfo", "") + HelpExampleRpc("getnetworkinfo", ""));
 
-    LOCK(cs_main);
     UniValue obj(UniValue::VOBJ);
     obj.push_back(Pair("version", CLIENT_VERSION));
     obj.push_back(Pair("protocolversion", PROTOCOL_VERSION));

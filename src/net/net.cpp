@@ -61,7 +61,7 @@
 //
 bool fDiscover = true;
 bool fListen = true;
-bool fRelayTxes = true;
+std::atomic<bool> fRelayTxes{true};
 extern CCriticalSection cs_mapLocalHost;
 extern std::map<CNetAddr, LocalServiceInfo> mapLocalHost;
 static bool vfLimited[NET_MAX] = {};

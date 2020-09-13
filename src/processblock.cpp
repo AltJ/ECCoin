@@ -37,8 +37,8 @@
 #include "validationinterface.h"
 
 
-bool fLargeWorkForkFound = false;
-bool fLargeWorkInvalidChainFound = false;
+std::atomic<bool> fLargeWorkForkFound{false};
+std::atomic<bool> fLargeWorkInvalidChainFound{false};
 CBlockIndex *pindexBestForkTip = nullptr;
 CBlockIndex *pindexBestForkBase = nullptr;
 

@@ -19,8 +19,8 @@ class CChainParams;
 class CDiskBlockPos;
 class CBlockIndex;
 
-extern bool fLargeWorkForkFound;
-extern bool fLargeWorkInvalidChainFound;
+extern std::atomic<bool> fLargeWorkForkFound;
+extern std::atomic<bool> fLargeWorkInvalidChainFound;
 
 CBlockIndex *FindMostWorkChain();
 void CheckBlockIndex(const Consensus::Params &consensusParams);

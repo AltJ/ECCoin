@@ -57,34 +57,37 @@ class CNode
 public:
     // socket
     std::atomic<ServiceFlags> nServices;
-    // Services expected from a peer, otherwise it will be disconnected
-    ServiceFlags nServicesExpected;
-    SOCKET hSocket;
-    // Total size of all vSendMsg entries.
-    size_t nSendSize;
-    // Offset inside the first vSendMsg already sent.
-    size_t nSendOffset;
-    uint64_t nSendBytes;
+
+    CCriticalSection cs_hSocket;
+    SOCKET hSocket GUARDED_BY(cs_hSocket);
+    std::atomic<uint64_t> nSendBytes;
     // Total bytes sent and received
     uint64_t nActivityBytes;
-    std::deque<std::vector<uint8_t> > vSendMsg;
+
     CCriticalSection cs_vSend;
-    CCriticalSection cs_hSocket;
+    std::deque<std::vector<uint8_t> > vSendMsg GUARDED_BY(cs_vSend);
+    // Total size of all vSendMsg entries.
+    size_t nSendSize GUARDED_BY(cs_vSend);
+    // Offset inside the first vSendMsg already sent.
+    size_t nSendOffset GUARDED_BY(cs_vSend);
+
+    // this cs is needed for mapRecvBytesPerMsgCmd
     CCriticalSection cs_vRecv;
 
     CCriticalSection cs_vProcessMsg;
-    std::list<CNetMessage> vProcessMsg;
-    size_t nProcessQueueSize;
+    std::list<CNetMessage> vProcessMsg GUARDED_BY(cs_vProcessMsg);
+    size_t nProcessQueueSize GUARDED_BY(cs_vProcessMsg);
 
     CCriticalSection cs_sendProcessing;
 
     CCriticalSection csRecvGetData;
-    std::deque<CInv> vRecvGetData;
-    uint64_t nRecvBytes;
-    std::atomic<int> nRecvVersion;
+    std::deque<CInv> vRecvGetData GUARDED_BY(csRecvGetData);
 
+    std::atomic<uint64_t> nRecvBytes;
+    std::atomic<int> nRecvVersion;
     std::atomic<int64_t> nLastSend;
     std::atomic<int64_t> nLastRecv;
+
     const int64_t nTimeConnected;
     std::atomic<int64_t> nTimeOffset;
     const CAddress addr;
@@ -113,12 +116,14 @@ public:
     // b) the peer may tell us in its version message that we should not relay
     // tx invs unless it loads a bloom filter.
 
-    // protected by cs_filter
-    bool fRelayTxes;
-    bool fSentAddr;
-    CSemaphoreGrant grantOutbound;
     CCriticalSection cs_filter;
-    CBloomFilter *pfilter;
+    bool fRelayTxes GUARDED_BY(cs_filter);
+    CBloomFilter *pfilter GUARDED_BY(cs_filter);
+
+    std::atomic<bool> fSentAddr;
+    CSemaphoreGrant grantOutbound;
+
+
     std::atomic<int> nRefCount;
     const NodeId id;
 
@@ -130,8 +135,8 @@ public:
     std::atomic<uint8_t> nMisbehavior;
 
 protected:
-    mapMsgCmdSize mapSendBytesPerMsgCmd;
-    mapMsgCmdSize mapRecvBytesPerMsgCmd;
+    mapMsgCmdSize mapSendBytesPerMsgCmd GUARDED_BY(cs_vSend);
+    mapMsgCmdSize mapRecvBytesPerMsgCmd GUARDED_BY(cs_vRecv);
 
 public:
     std::atomic<int> nStartingHeight;

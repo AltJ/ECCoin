@@ -13,7 +13,6 @@
 #include "kernel.h"
 #include "main.h"
 #include "net/messages.h"
-#include "net/nodestate.h"
 #include "processblock.h"
 #include "processheader.h"
 #include "txmempool.h"

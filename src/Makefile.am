@@ -109,7 +109,6 @@ BITCOIN_CORE_H = \
   net/netconstants.h \
   net/netmessage.h \
   net/node.h \
-  net/nodestate.h \
   net/protocol.h \
   net/requestmanager.h \
   chain/chainparams.h \
@@ -258,7 +257,6 @@ libbitcoin_server_a_SOURCES = \
   net/net.cpp \
   net/netaddress.cpp \
   net/netbase.cpp \
-  net/netmessage.cpp \
   net/node.cpp \
   net/protocol.cpp \
   net/requestmanager.cpp \
