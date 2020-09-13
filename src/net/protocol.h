@@ -247,6 +247,13 @@ extern const char *NSVERSION;
  * The nsverack message acknowledges a previously-received nsversion message,
  */
 extern const char *NSVERACK;
+/**
+ * The mempool message requests the TXIDs of transactions that the receiving
+ * node has verified as valid but which have not yet appeared in a block.
+ * @since protocol version 60002.
+ * @see https://bitcoin.org/en/developer-reference#mempool
+ */
+extern const char *MEMPOOL;
 };
 
 /* Get a vector of all valid message types (see above) */
