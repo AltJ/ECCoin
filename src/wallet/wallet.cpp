@@ -1085,45 +1085,6 @@ int64_t CWalletTx::GetTxTime() const
     return n ? n : nTimeReceived;
 }
 
-int CWalletTx::GetRequestCount() const
-{
-    // Returns -1 if it wasn't being tracked
-    int nRequests = -1;
-    {
-        LOCK(pwallet->cs_wallet);
-        if (tx->IsCoinBase() || tx->IsCoinStake())
-        {
-            // Generated block
-            if (!hashUnset())
-            {
-                std::map<uint256, int>::const_iterator mi = pwallet->mapRequestCount.find(hashBlock);
-                if (mi != pwallet->mapRequestCount.end())
-                    nRequests = (*mi).second;
-            }
-        }
-        else
-        {
-            // Did anyone request this transaction?
-            std::map<uint256, int>::const_iterator mi = pwallet->mapRequestCount.find(tx->GetHash());
-            if (mi != pwallet->mapRequestCount.end())
-            {
-                nRequests = (*mi).second;
-
-                // How about the block it's in?
-                if (nRequests == 0 && !hashUnset())
-                {
-                    std::map<uint256, int>::const_iterator mj = pwallet->mapRequestCount.find(hashBlock);
-                    if (mj != pwallet->mapRequestCount.end())
-                        nRequests = (*mj).second;
-                    else
-                        nRequests = 1; // If it's in someone else's block it must have got out
-                }
-            }
-        }
-    }
-    return nRequests;
-}
-
 void CWalletTx::GetAmounts(std::list<COutputEntry> &listReceived,
     std::list<COutputEntry> &listSent,
     CAmount &nFee,
@@ -2444,9 +2405,6 @@ bool CWallet::CommitTransaction(CWalletTx &wtxNew, CReserveKey &reservekey, CCon
             if (fFileBacked)
                 delete pwalletdb;
         }
-
-        // Track how many getdata requests our transaction gets
-        mapRequestCount[wtxNew.tx->GetHash()] = 0;
 
         if (fBroadcastTransactions)
         {

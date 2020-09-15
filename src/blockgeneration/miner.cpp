@@ -390,13 +390,6 @@ bool CheckWork(const CBlock *pblock, CWallet &wallet, boost::shared_ptr<CReserve
 
         // Remove key from key pool
         coinbaseScript->KeepScript();
-
-        // Track how many getdata requests this block gets
-        {
-            LOCK2(cs_main, wallet.cs_wallet);
-            wallet.mapRequestCount[pblock->GetHash()] = 0;
-        }
-
         // Process this block the same as if we had received it from another node
         CValidationState state;
         const CChainParams &chainparams = Params();
