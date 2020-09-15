@@ -412,8 +412,6 @@ void static ProcessGetData(CNode *pfrom,
                 vNotFound.push_back(inv);
             }
         }
-        // Track requests for our stuff.
-        GetMainSignals().Inventory(inv.hash);
     }
     if (!vNotFound.empty())
     {
@@ -821,9 +819,6 @@ bool static ProcessMessage(CNode *pfrom,
                     pfrom->AskFor(inv);
                 }
             }
-
-            // Track requests for our stuff
-            GetMainSignals().Inventory(inv.hash);
         }
     }
 
